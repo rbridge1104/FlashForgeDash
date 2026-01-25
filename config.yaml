@@ -1,0 +1,21 @@
+# FlashForge Adventurer 3 Monitor Configuration
+
+printer:
+  ip_address: "192.168.1.200"  # Change to your printer's IP
+  control_port: 8899
+  camera_port: 8080
+  poll_interval: 5  # seconds
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+
+notifications:
+  n8n_webhook_url: ""  # e.g., https://your-n8n.domain/webhook/printer-status
+  notify_on_complete: true
+  notify_on_error: true
+
+gcode:
+  upload_directory: "./uploads"
+  max_file_size_mb: 100

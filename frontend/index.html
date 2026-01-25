@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashForge Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom gauge styles */
+        .gauge-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+        .gauge-bg {
+            fill: none;
+            stroke: #374151;
+            stroke-width: 12;
+        }
+        .gauge-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+        .gauge-nozzle { stroke: #f97316; }
+        .gauge-bed { stroke: #3b82f6; }
+        .gauge-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            fill: white;
+        }
+        .gauge-label {
+            font-size: 0.75rem;
+            fill: #9ca3af;
+        }
+
+        /* Status indicator */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-idle { background-color: #22c55e; }
+        .status-printing { background-color: #f97316; animation: pulse 2s infinite; }
+        .status-paused { background-color: #eab308; }
+        .status-complete { background-color: #3b82f6; }
+        .status-error { background-color: #ef4444; }
+        .status-disconnected { background-color: #6b7280; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Camera feed styling */
+        #camera-feed {
+            max-width: 100%;
+            border-radius: 8px;
+            background-color: #1f2937;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold">FlashForge Monitor</h1>
+                <p class="text-gray-400 text-sm">
+                    Adventurer 3 Dashboard
+                    <span id="app-version" class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded ml-2"></span>
+                </p>
+            </div>
+            <div id="connection-status" class="flex items-center">
+                <span class="status-dot status-disconnected" id="status-dot"></span>
+                <span id="status-text" class="text-gray-400">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Camera Feed -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-3">Camera Feed</h2>
+                    <div class="relative">
+                        <img id="camera-feed"
+                             src=""
+                             alt="Printer Camera Feed"
+                             class="w-full aspect-video object-contain bg-gray-700 rounded"
+                             onload="console.log('Camera feed loaded'); this.style.display='block'; document.getElementById('camera-error').style.display='none';"
+                             onerror="console.error('Camera feed error'); this.style.display='none'; document.getElementById('camera-error').style.display='flex';">
+                        <div id="camera-error"
+                             class="hidden w-full aspect-video bg-gray-700 rounded flex-col items-center justify-center text-gray-400 p-4">
+                            <p class="mb-2">Camera feed unavailable through proxy</p>
+                            <p class="text-sm text-gray-500 mb-3">The printer's camera may be off or not responding</p>
+                            <a id="direct-camera-link" href="#" target="_blank"
+                               class="text-blue-400 hover:text-blue-300 text-sm underline">
+                                Open direct camera link in new tab
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="bg-gray-800 rounded-lg p-4 mt-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-lg font-semibold">Print Progress</h2>
+                        <span id="progress-percent" class="text-2xl font-bold text-orange-500">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+                        <div id="progress-bar"
+                             class="bg-gradient-to-r from-orange-500 to-orange-400 h-full rounded-full transition-all duration-500"
+                             style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-sm text-gray-400">
+                        <span id="gcode-filename">No file loaded</span>
+                        <span id="time-remaining">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Gauges and Controls -->
+            <div class="space-y-4">
+                <!-- Temperature Gauges -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4">Temperatures</h2>
+                    <div class="flex justify-around">
+                        <!-- Nozzle Gauge -->
+                        <div class="text-center">
+                            <div class="gauge-container mx-auto">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle id="nozzle-gauge" class="gauge-fill gauge-nozzle"
+                                            cx="50" cy="50" r="40"
+                                            stroke-dasharray="251.2"
+                                            stroke-dashoffset="251.2"/>
+                                    <text class="gauge-text" x="50" y="50" text-anchor="middle" dominant-baseline="middle">
+                                        <tspan id="nozzle-temp">0</tspan>
+                                    </text>
+                                    <text class="gauge-label" x="50" y="70" text-anchor="middle">
+                                        / <tspan id="nozzle-target">0</tspan>
+                                    </text>
+                                </svg>
+                            </div>
+                            <p class="mt-2 text-orange-500 font-medium">Nozzle</p>
+                            <!-- Nozzle Temperature Controls -->
+                            <div class="flex items-center justify-center gap-2 mt-2">
+                                <button onclick="adjustTemp('nozzle', -10)"
+                                        class="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded text-lg font-bold">-</button>
+                                <input type="number" id="nozzle-input" value="200" min="0" max="300"
+                                       class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-center text-sm">
+                                <button onclick="adjustTemp('nozzle', 10)"
+                                        class="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded text-lg font-bold">+</button>
+                            </div>
+                            <button onclick="setTemp('nozzle')"
+                                    class="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 rounded text-sm">Set</button>
+                        </div>
+                        <!-- Bed Gauge -->
+                        <div class="text-center">
+                            <div class="gauge-container mx-auto">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle id="bed-gauge" class="gauge-fill gauge-bed"
+                                            cx="50" cy="50" r="40"
+                                            stroke-dasharray="251.2"
+                                            stroke-dashoffset="251.2"/>
+                                    <text class="gauge-text" x="50" y="50" text-anchor="middle" dominant-baseline="middle">
+                                        <tspan id="bed-temp">0</tspan>
+                                    </text>
+                                    <text class="gauge-label" x="50" y="70" text-anchor="middle">
+                                        / <tspan id="bed-target">0</tspan>
+                                    </text>
+                                </svg>
+                            </div>
+                            <p class="mt-2 text-blue-500 font-medium">Bed</p>
+                            <!-- Bed Temperature Controls -->
+                            <div class="flex items-center justify-center gap-2 mt-2">
+                                <button onclick="adjustTemp('bed', -5)"
+                                        class="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded text-lg font-bold">-</button>
+                                <input type="number" id="bed-input" value="60" min="0" max="120"
+                                       class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-center text-sm">
+                                <button onclick="adjustTemp('bed', 5)"
+                                        class="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded text-lg font-bold">+</button>
+                            </div>
+                            <button onclick="setTemp('bed')"
+                                    class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">Set</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4">Controls</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-emergency"
+                                onclick="sendCommand('emergency_stop')"
+                                class="col-span-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                            EMERGENCY STOP
+                        </button>
+                        <button id="btn-led-on"
+                                onclick="sendCommand('led_on')"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            LED On
+                        </button>
+                        <button id="btn-led-off"
+                                onclick="sendCommand('led_off')"
+                                class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            LED Off
+                        </button>
+                        <button id="btn-pause"
+                                onclick="sendCommand('pause')"
+                                class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            Pause
+                        </button>
+                        <button id="btn-resume"
+                                onclick="sendCommand('resume')"
+                                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                            Resume
+                        </button>
+                    </div>
+                </div>
+
+                <!-- G-code Upload -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-3">Upload G-code</h2>
+                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                        <input type="file" id="gcode-input" accept=".gcode,.gco,.g" class="hidden"
+                               onchange="handleFileSelect(this.files[0])">
+                        <label for="gcode-input" class="cursor-pointer">
+                            <p class="text-gray-400 mb-2">Click to select G-code file</p>
+                            <p id="selected-file" class="text-sm text-blue-400 hidden"></p>
+                        </label>
+                    </div>
+                    <div class="mt-3 space-y-2">
+                        <button onclick="uploadGcode('analyze')"
+                                class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition-colors">
+                            Analyze Only
+                        </button>
+                        <button onclick="uploadGcode('upload')"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors">
+                            Upload to Printer
+                        </button>
+                        <button onclick="uploadGcode('upload_and_start')"
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors">
+                            Upload & Start Print
+                        </button>
+                    </div>
+                    <div id="upload-status" class="mt-2 text-sm text-green-400 hidden"></div>
+                </div>
+
+                <!-- Files on Printer -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-semibold">Printer Files</h2>
+                        <button onclick="loadFileList()"
+                                class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded">
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="file-list" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-400 text-sm">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-3">Settings</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-gray-400">Printer IP</label>
+                            <input type="text" id="printer-ip"
+                                   class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white mt-1"
+                                   placeholder="192.168.1.100">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">n8n Webhook URL</label>
+                            <input type="text" id="webhook-url"
+                                   class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white mt-1"
+                                   placeholder="https://...">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="saveSettings()"
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors">
+                                Save
+                            </button>
+                            <button onclick="testNotification()"
+                                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition-colors">
+                                Test Webhook
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-lg transform translate-y-full opacity-0 transition-all duration-300">
+            <p id="toast-message" class="text-sm"></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const POLL_INTERVAL = 5000; // 5 seconds
+        let cameraUrl = '';
+        let selectedFile = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadConfig();
+            await loadCameraUrl();
+            await loadFileList();
+            startPolling();
+        });
+
+        // Load initial configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                document.getElementById('printer-ip').value = data.printer_ip || '';
+                if (data.version) {
+                    document.getElementById('app-version').textContent = 'v' + data.version;
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Load camera URL
+        async function loadCameraUrl() {
+            try {
+                const response = await fetch('/api/camera');
+                const data = await response.json();
+                cameraUrl = data.stream_url;
+
+                // Add timestamp to prevent caching
+                const streamUrl = cameraUrl + '?t=' + new Date().getTime();
+                const imgElement = document.getElementById('camera-feed');
+                imgElement.src = streamUrl;
+
+                console.log('Camera URL set to:', streamUrl);
+
+                // Set direct camera link for fallback
+                const config = await fetch('/api/config').then(r => r.json());
+                const directUrl = `http://${config.printer_ip}:8080/?action=stream`;
+                document.getElementById('direct-camera-link').href = directUrl;
+            } catch (error) {
+                console.error('Failed to load camera URL:', error);
+            }
+        }
+
+        // Poll printer status
+        async function pollStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error('Failed to fetch status');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Status poll failed:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Start polling loop
+        function startPolling() {
+            pollStatus();
+            setInterval(pollStatus, POLL_INTERVAL);
+        }
+
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            updateConnectionStatus(data.connected, data.status);
+            updateGauges(data);
+            updateProgress(data);
+            updateTimeRemaining(data);
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus(connected, status = 'disconnected') {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+
+            dot.className = 'status-dot status-' + status;
+            text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            text.className = connected ? 'text-green-400' : 'text-gray-400';
+        }
+
+        // Update temperature gauges
+        function updateGauges(data) {
+            // Nozzle gauge (max 300C)
+            const nozzlePercent = Math.min(data.nozzle_temp / 300, 1);
+            const nozzleOffset = 251.2 * (1 - nozzlePercent);
+            document.getElementById('nozzle-gauge').style.strokeDashoffset = nozzleOffset;
+            document.getElementById('nozzle-temp').textContent = Math.round(data.nozzle_temp);
+            document.getElementById('nozzle-target').textContent = Math.round(data.nozzle_target);
+
+            // Bed gauge (max 120C)
+            const bedPercent = Math.min(data.bed_temp / 120, 1);
+            const bedOffset = 251.2 * (1 - bedPercent);
+            document.getElementById('bed-gauge').style.strokeDashoffset = bedOffset;
+            document.getElementById('bed-temp').textContent = Math.round(data.bed_temp);
+            document.getElementById('bed-target').textContent = Math.round(data.bed_target);
+        }
+
+        // Update progress bar
+        function updateProgress(data) {
+            const progress = Math.min(Math.max(data.progress, 0), 100);
+            document.getElementById('progress-bar').style.width = progress + '%';
+            document.getElementById('progress-percent').textContent = progress + '%';
+
+            if (data.gcode_filename) {
+                document.getElementById('gcode-filename').textContent = data.gcode_filename;
+            }
+        }
+
+        // Update time remaining
+        function updateTimeRemaining(data) {
+            if (data.time_remaining_formatted && data.time_remaining_formatted !== '00:00:00') {
+                document.getElementById('time-remaining').textContent =
+                    'Remaining: ' + data.time_remaining_formatted;
+            } else {
+                document.getElementById('time-remaining').textContent = '--:--:--';
+            }
+        }
+
+        // Send control command
+        async function sendCommand(command) {
+            try {
+                const response = await fetch('/api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+                const data = await response.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+            } catch (error) {
+                showToast('Command failed: ' + error.message, 'error');
+            }
+        }
+
+        // Adjust temperature input
+        function adjustTemp(target, delta) {
+            const input = document.getElementById(target + '-input');
+            const max = target === 'nozzle' ? 300 : 120;
+            let newVal = parseInt(input.value) + delta;
+            newVal = Math.max(0, Math.min(max, newVal));
+            input.value = newVal;
+        }
+
+        // Set temperature
+        async function setTemp(target) {
+            const input = document.getElementById(target + '-input');
+            const temperature = parseInt(input.value);
+
+            try {
+                const response = await fetch('/api/temperature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target, temperature })
+                });
+                const data = await response.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+            } catch (error) {
+                showToast('Failed to set temperature: ' + error.message, 'error');
+            }
+        }
+
+        // Handle file selection
+        function handleFileSelect(file) {
+            selectedFile = file;
+            if (file) {
+                document.getElementById('selected-file').textContent = file.name;
+                document.getElementById('selected-file').classList.remove('hidden');
+            }
+        }
+
+        // Upload G-code file with different modes
+        async function uploadGcode(mode) {
+            if (!selectedFile) {
+                showToast('Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // Determine upload parameters based on mode
+            let uploadToPrinter = false;
+            let startPrint = false;
+
+            if (mode === 'upload') {
+                uploadToPrinter = true;
+            } else if (mode === 'upload_and_start') {
+                uploadToPrinter = true;
+                startPrint = true;
+            }
+
+            try {
+                const url = `/api/gcode/upload?upload_to_printer=${uploadToPrinter}&start_print=${startPrint}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const status = document.getElementById('upload-status');
+                    let message = `${data.filename} (Est: ${data.estimated_time_formatted})`;
+
+                    if (data.uploaded_to_printer) {
+                        message = 'Uploaded to printer: ' + message;
+                    }
+                    if (data.print_started) {
+                        message += ' - Print started!';
+                    }
+
+                    status.textContent = message;
+                    status.classList.remove('hidden');
+                    showToast(message, 'success');
+
+                    // Refresh file list if uploaded to printer
+                    if (data.uploaded_to_printer) {
+                        setTimeout(() => loadFileList(), 1000);
+                    }
+                } else {
+                    showToast(data.message || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showToast('Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        // Load list of files on printer
+        async function loadFileList() {
+            try {
+                const response = await fetch('/api/files');
+                const data = await response.json();
+
+                const fileList = document.getElementById('file-list');
+
+                if (data.success && data.files.length > 0) {
+                    fileList.innerHTML = data.files.map(file => `
+                        <div class="flex items-center justify-between bg-gray-700 rounded px-3 py-2">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-white truncate">${file.filename}</p>
+                                <p class="text-xs text-gray-400">${formatFileSize(file.size)}</p>
+                            </div>
+                            <div class="flex gap-2 ml-2">
+                                <button onclick="startPrint('${file.filename}')"
+                                        class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded">
+                                    Print
+                                </button>
+                                <button onclick="deleteFile('${file.filename}')"
+                                        class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    fileList.innerHTML = '<p class="text-gray-400 text-sm">No files on printer</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load file list:', error);
+                document.getElementById('file-list').innerHTML = '<p class="text-red-400 text-sm">Failed to load files</p>';
+            }
+        }
+
+        // Start printing a file from the printer
+        async function startPrint(filename) {
+            if (!confirm(`Start printing ${filename}?`)) return;
+
+            try {
+                const response = await fetch('/api/files/print', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await response.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+            } catch (error) {
+                showToast('Failed to start print: ' + error.message, 'error');
+            }
+        }
+
+        // Delete a file from the printer
+        async function deleteFile(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+
+            try {
+                const response = await fetch('/api/files/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await response.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+
+                if (data.success) {
+                    loadFileList();
+                }
+            } catch (error) {
+                showToast('Failed to delete file: ' + error.message, 'error');
+            }
+        }
+
+        // Format file size in human-readable format
+        function formatFileSize(bytes) {
+            if (bytes === 0) return 'Unknown size';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Save settings
+        async function saveSettings() {
+            const printerIp = document.getElementById('printer-ip').value;
+            const webhookUrl = document.getElementById('webhook-url').value;
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        printer_ip: printerIp || null,
+                        n8n_webhook_url: webhookUrl || null
+                    })
+                });
+                const data = await response.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+
+                // Reload camera with new IP
+                if (printerIp) {
+                    await loadCameraUrl();
+                }
+            } catch (error) {
+                showToast('Save failed: ' + error.message, 'error');
+            }
+        }
+
+        // Test webhook notification
+        async function testNotification() {
+            try {
+                const response = await fetch('/api/notifications/test', { method: 'POST' });
+                const data = await response.json();
+                showToast(data.message, 'success');
+            } catch (error) {
+                showToast('Notification test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+            toast.className = toast.className.replace(/border-\w+-\d+/g, '');
+
+            if (type === 'success') {
+                toast.classList.add('border-green-500');
+                toastMessage.className = 'text-sm text-green-400';
+            } else if (type === 'error') {
+                toast.classList.add('border-red-500');
+                toastMessage.className = 'text-sm text-red-400';
+            } else {
+                toast.classList.add('border-gray-700');
+                toastMessage.className = 'text-sm text-gray-400';
+            }
+
+            toast.classList.remove('translate-y-full', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+            }, 3000);
+        }
+
+        // Drag and drop support for G-code
+        const dropZone = document.querySelector('.border-dashed');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-gray-700');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-blue-500', 'bg-gray-700');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-gray-700');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFileSelect(file);
+                document.getElementById('gcode-input').files = e.dataTransfer.files;
+            }
+        });
+    </script>
+</body>
+</html>
