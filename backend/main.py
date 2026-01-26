@@ -9,20 +9,24 @@ import asyncio
 import httpx
 import requests
 import yaml
+import re
+import ipaddress
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, field_validator
 
 from .printer_client import PrinterClient, PrinterState, PrinterStatus
 from .gcode_parser import GCodeParser, GCodeMetadata
 
-VERSION = "1.2.2"
+VERSION = "1.3.0"
 
 # Load configuration
 def load_config() -> dict:
@@ -32,9 +36,29 @@ def load_config() -> dict:
             return yaml.safe_load(f)
     return {
         "printer": {"ip_address": "192.168.1.100", "poll_interval": 5},
-        "server": {"host": "0.0.0.0", "port": 8000},
+        "server": {"host": "127.0.0.1", "port": 8000},  # localhost only for security
         "notifications": {"n8n_webhook_url": "", "notify_on_complete": True},
     }
+
+
+def validate_ip_address(ip: str) -> bool:
+    """Validate IP address format."""
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+
+
+def validate_webhook_url(url: str) -> bool:
+    """Validate webhook URL format."""
+    if not url:
+        return True  # Empty URL is valid (disables webhooks)
+    try:
+        result = urlparse(url)
+        return all([result.scheme in ['http', 'https'], result.netloc])
+    except Exception:
+        return False
 
 
 config = load_config()
@@ -123,6 +147,18 @@ app = FastAPI(
     description="Dashboard and API for FlashForge Adventurer 3",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Add CORS middleware for security
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
 )
 
 # Mount static files
@@ -302,7 +338,30 @@ async def upload_gcode(
 
     # Read file content
     content = await file.read()
-    content_str = content.decode('utf-8', errors='ignore')
+
+    # File size validation (100MB max from config)
+    max_size = config.get("gcode", {}).get("max_file_size_mb", 100) * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {max_size // (1024*1024)}MB"
+        )
+
+    # Basic content validation - check if it's text-like
+    try:
+        content_str = content.decode('utf-8', errors='strict')
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file content. G-code files must be text files."
+        )
+
+    # Check if file contains G-code commands
+    if not any(line.strip().startswith(('G', 'M', ';')) for line in content_str.split('\n')[:50]):
+        raise HTTPException(
+            status_code=400,
+            detail="File doesn't appear to contain valid G-code commands."
+        )
 
     # Parse G-code for metadata
     parser = GCodeParser()
@@ -424,7 +483,13 @@ async def update_config(update: ConfigUpdate):
     """Update configuration dynamically."""
     global printer_client, config
 
+    # Validate printer IP if provided
     if update.printer_ip:
+        if not validate_ip_address(update.printer_ip):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid IP address format: {update.printer_ip}"
+            )
         config["printer"]["ip_address"] = update.printer_ip
         # Reconnect with new IP
         if printer_client:
@@ -434,7 +499,13 @@ async def update_config(update: ConfigUpdate):
             printer_client.add_status_callback(status_change_callback)
             printer_client.start_polling()
 
+    # Validate webhook URL if provided
     if update.n8n_webhook_url is not None:
+        if not validate_webhook_url(update.n8n_webhook_url):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid webhook URL format. Must be http:// or https://"
+            )
         if "notifications" not in config:
             config["notifications"] = {}
         config["notifications"]["n8n_webhook_url"] = update.n8n_webhook_url
