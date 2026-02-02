@@ -35,3 +35,13 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+server.pid
+
+# Data directory
+data/
+
+# Claude history
+.claude/
+
+# Environment files (contains secrets)
+.env
