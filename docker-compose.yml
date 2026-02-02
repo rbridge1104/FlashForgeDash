@@ -2,9 +2,12 @@ version: '3.8'
 
 services:
   flashforge-dash:
-    build: .
+    # Use published image from Docker Hub
+    image: rbridge1104/flashforge-dash:latest
     container_name: flashforge-dashboard
-    image: flashforge-dash:latest
+
+    # Uncomment to build locally instead:
+    # build: .
 
     # Port mapping
     ports:
