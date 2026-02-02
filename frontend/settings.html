@@ -829,6 +829,25 @@
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', loadPendingRequests);
             }
+
+            // Emergency stop button
+            const emergencyStop = document.querySelector('.stop-sign');
+            if (emergencyStop) {
+                emergencyStop.addEventListener('click', async () => {
+                    if (confirm('EMERGENCY STOP: This will immediately halt all printer operations. Continue?')) {
+                        try {
+                            await fetch('/api/control', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ command: 'emergency_stop' })
+                            });
+                            console.log('Emergency stop sent');
+                        } catch (error) {
+                            console.error('Error sending emergency stop:', error);
+                        }
+                    }
+                });
+            }
         });
     </script>
 </body>

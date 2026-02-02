@@ -512,24 +512,6 @@
                     </div>
                 </div>
 
-                <!-- Current Position -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4">
-                    <div class="text-xs text-slate-500 uppercase tracking-wide mb-3">Current Position</div>
-                    <div class="grid grid-cols-3 gap-4 font-mono">
-                        <div>
-                            <div class="text-xs text-slate-500 mb-1">X Axis</div>
-                            <div class="text-lg font-bold text-blue-400">125.4</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-slate-500 mb-1">Y Axis</div>
-                            <div class="text-lg font-bold text-purple-400">63.2</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-slate-500 mb-1">Z Axis</div>
-                            <div class="text-lg font-bold text-green-400">5.8</div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Temperature Card - PRIORITY #2 -->
@@ -599,20 +581,20 @@
                 <div class="pt-4 border-t border-slate-700/50">
                     <div class="text-xs text-slate-500 uppercase tracking-wide mb-3">Quick Presets</div>
                     <div class="grid grid-cols-4 gap-2 mb-2">
-                        <button class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
+                        <button id="preset-pla" class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
                             PLA
                         </button>
-                        <button class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
+                        <button id="preset-petg" class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
                             PETG
                         </button>
-                        <button class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
+                        <button id="preset-abs" class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
                             ABS
                         </button>
-                        <button class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
+                        <button id="preset-asa" class="px-3 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-orange-500/30 hover:to-orange-600/30 border border-slate-600/50 hover:border-orange-500/50 rounded-lg text-xs font-medium">
                             ASA
                         </button>
                     </div>
-                    <button class="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg text-sm font-medium border border-blue-500/50">
+                    <button id="cooldown-all" class="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg text-sm font-medium border border-blue-500/50">
                         Cool Down All
                     </button>
                 </div>
@@ -786,14 +768,15 @@
 
                     <!-- Middle: Upload Zone -->
                     <div class="lg:col-span-1">
-                        <div class="border-2 border-dashed border-slate-600/50 hover:border-purple-500/50 rounded-lg p-6 text-center cursor-pointer bg-slate-900/30 h-full flex flex-col items-center justify-center">
+                        <input type="file" id="gcode-file-input" accept=".gcode,.gco,.g" style="display: none;">
+                        <div id="upload-zone" class="border-2 border-dashed border-slate-600/50 hover:border-purple-500/50 rounded-lg p-6 text-center cursor-pointer bg-slate-900/30 h-full flex flex-col items-center justify-center transition-all">
                             <div class="w-14 h-14 mb-3 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center">
                                 <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                 </svg>
                             </div>
-                            <p class="text-slate-300 text-sm font-medium mb-1">Drop G-code or click</p>
-                            <p class="text-slate-500 text-xs">Max 100 MB</p>
+                            <p id="upload-text" class="text-slate-300 text-sm font-medium mb-1">Drop G-code or click</p>
+                            <p id="upload-subtext" class="text-slate-500 text-xs">Max 100 MB</p>
                         </div>
                     </div>
 
@@ -852,15 +835,6 @@
             }
         }
 
-        async function fetchPosition() {
-            try {
-                const response = await fetch('/api/position');
-                const data = await response.json();
-                updatePosition(data);
-            } catch (error) {
-                console.error('Error fetching position:', error);
-            }
-        }
 
         async function sendControl(command) {
             try {
@@ -887,11 +861,33 @@
             }
         }
 
+        // Get status styling based on printer state
+        function getStatusStyle(status) {
+            const styles = {
+                'idle': { color: 'text-slate-400', label: 'IDLE' },
+                'preheating': { color: 'text-yellow-400', label: 'PREHEATING' },
+                'heating': { color: 'text-orange-400', label: 'HEATING' },
+                'cooling': { color: 'text-blue-400', label: 'COOLING' },
+                'ready': { color: 'text-green-400', label: 'READY' },
+                'printing': { color: 'text-orange-400', label: 'PRINTING' },
+                'paused': { color: 'text-yellow-400', label: 'PAUSED' },
+                'complete': { color: 'text-green-400', label: 'COMPLETE' },
+                'error': { color: 'text-red-400', label: 'ERROR' },
+                'disconnected': { color: 'text-red-400', label: 'DISCONNECTED' }
+            };
+            return styles[status.toLowerCase()] || styles['idle'];
+        }
+
         // Update UI with status data
         function updateUI(data) {
-            // Status
+            // Status with dynamic styling
             const statusText = document.querySelector('.text-3xl.font-bold.text-orange-400');
-            if (statusText) statusText.textContent = data.status.toUpperCase();
+            if (statusText) {
+                const style = getStatusStyle(data.status);
+                statusText.textContent = style.label;
+                // Update color class
+                statusText.className = `text-3xl font-bold ${style.color}`;
+            }
 
             // Connection status
             const connectionDot = document.querySelector('.bg-green-500.pulse-dot');
@@ -980,7 +976,9 @@
             const pauseBtn = document.querySelector('button[title*="Pause"]');
             const stopBtn = document.querySelector('button[title*="Cancel Print"]');
 
-            if (status === 'PRINTING') {
+            const statusLower = status.toLowerCase();
+
+            if (statusLower === 'printing') {
                 // Disable play, enable pause/stop
                 if (playBtn) {
                     playBtn.disabled = true;
@@ -994,7 +992,7 @@
                     stopBtn.disabled = false;
                     stopBtn.classList.remove('opacity-40', 'cursor-not-allowed');
                 }
-            } else if (status === 'PAUSED') {
+            } else if (statusLower === 'paused') {
                 // Enable play, disable pause, enable stop
                 if (playBtn) {
                     playBtn.disabled = false;
@@ -1009,7 +1007,7 @@
                     stopBtn.classList.remove('opacity-40', 'cursor-not-allowed');
                 }
             } else {
-                // Idle - disable all
+                // Idle, preheating, heating, cooling, ready, etc. - disable all print controls
                 if (playBtn) {
                     playBtn.disabled = true;
                     playBtn.classList.add('opacity-40', 'cursor-not-allowed');
@@ -1025,12 +1023,6 @@
             }
         }
 
-        function updatePosition(data) {
-            const positions = document.querySelectorAll('.text-lg.font-bold');
-            if (positions[0]) positions[0].textContent = data.x.toFixed(1);
-            if (positions[1]) positions[1].textContent = data.y.toFixed(1);
-            if (positions[2]) positions[2].textContent = data.z.toFixed(1);
-        }
 
         // Wire up control buttons
         document.addEventListener('DOMContentLoaded', () => {
@@ -1081,7 +1073,18 @@
             }
 
             // LED control
-            const ledBtn = document.querySelector('button .text-yellow-400').closest('button');
+            // Home button
+            const homeBtn = document.querySelector('button .text-blue-400')?.closest('button');
+            if (homeBtn) {
+                homeBtn.addEventListener('click', () => {
+                    if (confirm('Home all axes? The print head will move to the home position.')) {
+                        sendControl('home_axes');
+                    }
+                });
+            }
+
+            // LED control
+            const ledBtn = document.querySelector('button .text-yellow-400')?.closest('button');
             if (ledBtn) {
                 ledBtn.addEventListener('click', async () => {
                     // Toggle LED - we'll fetch status first to know current state
@@ -1091,8 +1094,19 @@
                 });
             }
 
+            // Fan button
+            const fanBtn = document.querySelector('button .text-cyan-400')?.closest('button');
+            if (fanBtn) {
+                fanBtn.addEventListener('click', async () => {
+                    // For now, just toggle fan on (printer might not report fan status)
+                    // Could be enhanced to track state if needed
+                    sendControl('fan_on');
+                });
+            }
+
             // Temperature controls
             setupTempControls();
+            setupPresetButtons();
 
             // Settings button
             const settingsBtn = document.querySelector('button .text-purple-400')?.closest('button');
@@ -1112,15 +1126,77 @@
                 });
             }
 
+            // Camera fullscreen button
+            const fullscreenBtn = document.querySelector('button[title="Fullscreen"]');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                    const cameraContainer = document.querySelector('.camera-container');
+                    if (cameraContainer) {
+                        if (cameraContainer.requestFullscreen) {
+                            cameraContainer.requestFullscreen();
+                        } else if (cameraContainer.webkitRequestFullscreen) {
+                            cameraContainer.webkitRequestFullscreen();
+                        } else if (cameraContainer.msRequestFullscreen) {
+                            cameraContainer.msRequestFullscreen();
+                        }
+                    }
+                });
+            }
+
+            // File refresh button
+            const fileRefreshBtn = document.querySelector('button .text-purple-400')?.parentElement;
+            if (fileRefreshBtn && fileRefreshBtn.querySelector('path[d*="M4 4v5"]')) {
+                fileRefreshBtn.addEventListener('click', async () => {
+                    console.log('Refreshing file list...');
+                    // This would refresh the file list from printer's SD card
+                    // Currently file management UI shows upload only
+                    // Could be expanded to show SD card files when that tab is implemented
+                });
+            }
+
             // Start periodic updates
             fetchStatus();
-            fetchPosition();
             setInterval(fetchStatus, 2000);
-            setInterval(fetchPosition, 5000);
 
             // Update camera timestamp
             updateCameraTimestamp();
             setInterval(updateCameraTimestamp, 1000);
+
+            // File Upload Functionality
+            setupFileUpload();
+
+            // START PRINT button
+            const startPrintBtn = document.querySelector('button svg[viewBox="0 0 24 24"] path[d*="M14.752"]')?.closest('button');
+            if (startPrintBtn) {
+                startPrintBtn.addEventListener('click', async () => {
+                    try {
+                        const response = await fetch('/api/status');
+                        const data = await response.json();
+
+                        if (data.gcode_filename) {
+                            if (confirm(`Start printing ${data.gcode_filename}?`)) {
+                                const printResponse = await fetch('/api/files/print', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ filename: data.gcode_filename })
+                                });
+                                const result = await printResponse.json();
+                                if (result.success) {
+                                    console.log('Print started successfully');
+                                    fetchStatus();
+                                } else {
+                                    alert('Failed to start print: ' + result.message);
+                                }
+                            }
+                        } else {
+                            alert('No file loaded. Please upload a G-code file first.');
+                        }
+                    } catch (error) {
+                        console.error('Error starting print:', error);
+                        alert('Error starting print');
+                    }
+                });
+            }
         });
 
         function updateCameraTimestamp() {
@@ -1180,6 +1256,192 @@
             if (bedSet) {
                 bedSet.addEventListener('click', () => {
                     setTemperature('bed', parseInt(bedInput.value));
+                });
+            }
+        }
+
+        function setupFileUpload() {
+            const uploadZone = document.getElementById('upload-zone');
+            const fileInput = document.getElementById('gcode-file-input');
+            const uploadText = document.getElementById('upload-text');
+            const uploadSubtext = document.getElementById('upload-subtext');
+
+            if (!uploadZone || !fileInput) return;
+
+            // Click to select file
+            uploadZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Handle file selection
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+
+            // Drag and drop handlers
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('border-purple-500');
+                uploadZone.classList.remove('border-slate-600/50');
+            });
+
+            uploadZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('border-purple-500');
+                uploadZone.classList.add('border-slate-600/50');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('border-purple-500');
+                uploadZone.classList.add('border-slate-600/50');
+
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+
+            async function handleFileUpload(file) {
+                // Validate file type
+                const validExtensions = ['.gcode', '.gco', '.g'];
+                const fileName = file.name.toLowerCase();
+                const isValid = validExtensions.some(ext => fileName.endsWith(ext));
+
+                if (!isValid) {
+                    alert('Invalid file type. Please upload a G-code file (.gcode, .gco, .g)');
+                    return;
+                }
+
+                // Validate file size (100MB)
+                const maxSize = 100 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert('File too large. Maximum size is 100MB');
+                    return;
+                }
+
+                // Update UI to show uploading
+                uploadText.textContent = 'Uploading...';
+                uploadSubtext.textContent = file.name;
+                uploadZone.classList.add('opacity-50', 'pointer-events-none');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_to_printer', 'false');
+                    formData.append('start_print', 'false');
+
+                    const response = await fetch('/api/gcode/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        // Success
+                        uploadText.textContent = '✓ Upload complete';
+                        uploadSubtext.textContent = file.name;
+
+                        // Show success message for 2 seconds, then reset
+                        setTimeout(() => {
+                            uploadText.textContent = 'Drop G-code or click';
+                            uploadSubtext.textContent = 'Max 100 MB';
+                            uploadZone.classList.remove('opacity-50', 'pointer-events-none');
+                        }, 2000);
+
+                        // Refresh status to update UI
+                        fetchStatus();
+                    } else {
+                        throw new Error(data.message || 'Upload failed');
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Upload failed: ' + error.message);
+
+                    // Reset UI
+                    uploadText.textContent = 'Drop G-code or click';
+                    uploadSubtext.textContent = 'Max 100 MB';
+                    uploadZone.classList.remove('opacity-50', 'pointer-events-none');
+                }
+
+                // Clear file input
+                fileInput.value = '';
+            }
+        }
+
+        async function setupPresetButtons() {
+            // Material presets with default values
+            const defaultPresets = {
+                pla: { nozzle: 200, bed: 60 },
+                petg: { nozzle: 235, bed: 80 },
+                abs: { nozzle: 230, bed: 100 },
+                asa: { nozzle: 240, bed: 100 }
+            };
+
+            // Try to load presets from backend config
+            let presets = defaultPresets;
+            try {
+                const response = await fetch('/api/config/full');
+                if (response.ok) {
+                    const config = await response.json();
+                    if (config.material_presets) {
+                        presets = config.material_presets;
+                    }
+                }
+            } catch (error) {
+                console.log('Using default presets:', error);
+            }
+
+            // Wire up preset buttons
+            const presetButtons = ['pla', 'petg', 'abs', 'asa'];
+            presetButtons.forEach(material => {
+                const btn = document.getElementById(`preset-${material}`);
+                if (btn && presets[material]) {
+                    btn.addEventListener('click', async () => {
+                        const preset = presets[material];
+                        try {
+                            // Set nozzle temperature
+                            await setTemperature('nozzle', preset.nozzle);
+                            // Set bed temperature
+                            await setTemperature('bed', preset.bed);
+
+                            // Update input fields
+                            const nozzleInput = document.querySelector('input[min="0"][max="300"]');
+                            const bedInput = document.querySelector('input[min="0"][max="120"]');
+                            if (nozzleInput) nozzleInput.value = preset.nozzle;
+                            if (bedInput) bedInput.value = preset.bed;
+
+                            console.log(`Applied ${material.toUpperCase()} preset: Nozzle ${preset.nozzle}°C, Bed ${preset.bed}°C`);
+                        } catch (error) {
+                            console.error(`Error applying ${material} preset:`, error);
+                        }
+                    });
+                }
+            });
+
+            // Wire up cool down button
+            const cooldownBtn = document.getElementById('cooldown-all');
+            if (cooldownBtn) {
+                cooldownBtn.addEventListener('click', async () => {
+                    try {
+                        // Set both to 0
+                        await setTemperature('nozzle', 0);
+                        await setTemperature('bed', 0);
+
+                        // Update input fields
+                        const nozzleInput = document.querySelector('input[min="0"][max="300"]');
+                        const bedInput = document.querySelector('input[min="0"][max="120"]');
+                        if (nozzleInput) nozzleInput.value = 0;
+                        if (bedInput) bedInput.value = 0;
+
+                        console.log('Cooling down all heaters');
+                    } catch (error) {
+                        console.error('Error cooling down:', error);
+                    }
                 });
             }
         }

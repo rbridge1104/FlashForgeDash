@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 class PrinterStatus(Enum):
     IDLE = "idle"
+    PREHEATING = "preheating"
+    HEATING = "heating"
+    COOLING = "cooling"
+    READY = "ready"
     PRINTING = "printing"
     PAUSED = "paused"
     COMPLETE = "complete"
@@ -153,9 +157,10 @@ class PrinterClient:
             logger.warning(f"Failed to parse temperatures: {e}")
 
     def _parse_status(self, response: str) -> None:
-        """Parse M119 status response."""
+        """Parse M119 status response and determine intelligent status."""
         response_lower = response.lower()
 
+        # First, check explicit printer states
         if "printing" in response_lower:
             self.state.status = PrinterStatus.PRINTING
         elif "paused" in response_lower:
@@ -165,20 +170,85 @@ class PrinterClient:
         elif "error" in response_lower:
             self.state.status = PrinterStatus.ERROR
         elif self.state.connected:
-            self.state.status = PrinterStatus.IDLE
+            # Determine status based on temperature state
+            self.state.status = self._determine_thermal_status()
 
-        # Parse progress if available (M27 style response)
-        if "SD printing byte" in response:
+    def _parse_progress(self, response: str) -> None:
+        """Parse M27 progress response for SD card printing status."""
+        # M27 response formats:
+        # "SD printing byte X/Y" - actively printing
+        # "Not SD printing" - not printing from SD
+        if "SD printing byte" in response or "SD printing" in response:
             try:
                 # Format: SD printing byte X/Y
-                parts = response.split("SD printing byte")[1].strip().split("/")
-                if len(parts) == 2:
-                    current = int(parts[0])
-                    total = int(parts[1])
-                    if total > 0:
-                        self.state.progress = int((current / total) * 100)
-            except (ValueError, IndexError):
-                pass
+                if "byte" in response:
+                    parts = response.split("byte")[1].strip().split("/")
+                    if len(parts) == 2:
+                        current = int(parts[0].strip())
+                        total = int(parts[1].split()[0].strip())  # Handle trailing "ok"
+                        if total > 0:
+                            self.state.progress = int((current / total) * 100)
+                            logger.debug(f"SD print progress: {self.state.progress}% ({current}/{total} bytes)")
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse M27 progress: {e}")
+        elif "not" in response.lower() and "printing" in response.lower():
+            # Not printing from SD - reset progress if we're not in a print state
+            if self.state.status not in [PrinterStatus.PRINTING, PrinterStatus.PAUSED]:
+                self.state.progress = 0
+
+    def _determine_thermal_status(self) -> PrinterStatus:
+        """Determine printer status based on thermal state."""
+        # If there's active progress, printer is likely printing (M119 might not report it)
+        if self.state.progress > 0 and self.state.progress < 100:
+            return PrinterStatus.PRINTING
+
+        # Temperature tolerance (degrees C)
+        TEMP_TOLERANCE = 3.0
+        HEATING_THRESHOLD = 10.0  # Consider "heating" if more than 10° below target
+
+        nozzle_diff = self.state.nozzle_target - self.state.nozzle_temp
+        bed_diff = self.state.bed_target - self.state.bed_temp
+
+        # Check if targets are set
+        nozzle_target_set = self.state.nozzle_target > 30  # Above room temp
+        bed_target_set = self.state.bed_target > 30
+
+        # Check if heating
+        nozzle_heating = nozzle_target_set and nozzle_diff > TEMP_TOLERANCE
+        bed_heating = bed_target_set and bed_diff > TEMP_TOLERANCE
+
+        # Check if significantly below target (preheating)
+        nozzle_preheating = nozzle_target_set and nozzle_diff > HEATING_THRESHOLD
+        bed_preheating = bed_target_set and bed_diff > HEATING_THRESHOLD
+
+        # Check if cooling (temp above target)
+        nozzle_cooling = self.state.nozzle_temp > (self.state.nozzle_target + TEMP_TOLERANCE) and self.state.nozzle_temp > 40
+        bed_cooling = self.state.bed_temp > (self.state.bed_target + TEMP_TOLERANCE) and self.state.bed_temp > 40
+
+        # Check if at target temperature
+        nozzle_ready = nozzle_target_set and abs(nozzle_diff) <= TEMP_TOLERANCE
+        bed_ready = bed_target_set and abs(bed_diff) <= TEMP_TOLERANCE
+
+        # Determine status priority:
+        # 1. PREHEATING - Both nozzle and bed significantly below target
+        if nozzle_preheating and bed_preheating:
+            return PrinterStatus.PREHEATING
+
+        # 2. HEATING - Either component heating (but not both preheating)
+        if nozzle_heating or bed_heating:
+            return PrinterStatus.HEATING
+
+        # 3. READY - At target temperature(s)
+        if (nozzle_ready or not nozzle_target_set) and (bed_ready or not bed_target_set):
+            if nozzle_target_set or bed_target_set:
+                return PrinterStatus.READY
+
+        # 4. COOLING - Actively cooling down
+        if nozzle_cooling or bed_cooling:
+            return PrinterStatus.COOLING
+
+        # 5. IDLE - No active thermal management
+        return PrinterStatus.IDLE
 
     def poll_status(self) -> PrinterState:
         """Poll printer for current status and temperatures."""
@@ -201,6 +271,11 @@ class PrinterClient:
             else:
                 self._handle_connection_error()
                 return self.state
+
+            # Get SD card print progress (M27) - critical for manual prints
+            progress_response = self._send_command("~M27")
+            if progress_response:
+                self._parse_progress(progress_response)
 
             self.state.last_update = time.time()
             return self.state
