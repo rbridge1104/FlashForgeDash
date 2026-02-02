@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlashForge Monitor</title>
+    <title>FlashForge Monitor - UI Redesign Demo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Dynamic Animated Background with Schematic Pattern */
@@ -337,35 +337,6 @@
 
                 <div class="h-8 w-px bg-slate-700"></div>
 
-                <!-- User Menu Dropdown -->
-                <div class="relative group">
-                    <button class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-sm backdrop-blur-sm">
-                        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold" id="user-avatar">
-                            ?
-                        </div>
-                        <span id="user-email-short" class="text-slate-300">User</span>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-                    <div class="absolute right-0 mt-2 w-56 card rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                        <div class="p-3 border-b border-slate-700/50">
-                            <div class="text-xs text-slate-500 mb-1">Signed in as</div>
-                            <div id="user-email-full" class="text-sm text-slate-200 font-medium break-all">user@example.com</div>
-                        </div>
-                        <div class="p-2">
-                            <button id="sign-out-btn" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-600/50 rounded-md text-sm text-red-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                                </svg>
-                                <span>Sign Out</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="h-8 w-px bg-slate-700"></div>
-
                 <!-- Resources Dropdown -->
                 <div class="relative group">
                     <button class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-sm backdrop-blur-sm">
@@ -403,8 +374,8 @@
                     </div>
                 </div>
 
-                <!-- Settings Button (hidden for non-admins) -->
-                <button id="settings-btn" class="p-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg backdrop-blur-sm" style="display: none;">
+                <!-- Settings Button -->
+                <button class="p-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg backdrop-blur-sm">
                     <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -637,68 +608,61 @@
                     <div class="progress-bar absolute inset-y-0 left-0 rounded-full" style="width: 65%"></div>
                 </div>
 
-                <!-- File Info (dynamic: shows active print or no print message) -->
-                <div id="print-info-container">
-                    <!-- No active print state -->
-                    <div id="no-print-state" class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-6 text-center" style="display: none;">
-                        <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <p class="text-slate-400 text-sm">No active print job</p>
-                        <p class="text-slate-600 text-xs mt-1">Upload a G-code file to begin</p>
+                <!-- File Info -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 mb-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-slate-200 mb-1">benchy_final_v3.gcode</div>
+                            <div class="text-xs text-slate-500">2.4 MB • Uploaded 1h 23m ago</div>
+                        </div>
                     </div>
 
-                    <!-- Active print state -->
-                    <div id="active-print-state" style="display: none;">
-                        <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 mb-4">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <div id="print-filename" class="font-medium text-slate-200 mb-1">—</div>
-                                    <div class="text-xs text-slate-500">Active print job</div>
-                                </div>
+                    <!-- Time Stats -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-slate-900/50 rounded-lg p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs text-slate-500">Elapsed</span>
                             </div>
-
-                            <!-- Time Stats -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-slate-900/50 rounded-lg p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                        <span class="text-xs text-slate-500">Time Remaining</span>
-                                    </div>
-                                    <div id="print-time-remaining" class="font-mono text-lg font-bold text-orange-400">—</div>
-                                </div>
-                                <div class="bg-slate-900/50 rounded-lg p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                        </svg>
-                                        <span class="text-xs text-slate-500">Progress</span>
-                                    </div>
-                                    <div id="print-progress-text" class="font-mono text-lg font-bold text-blue-400">—</div>
-                                </div>
-                            </div>
+                            <div class="font-mono text-lg font-bold text-slate-200">1h 23m</div>
                         </div>
-
-                        <!-- Layer & Material Stats -->
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">Current Layer</div>
-                                <div class="font-mono text-xl font-bold text-slate-200">—</div>
-                                <div class="text-xs text-slate-500 mt-1">Not available from API</div>
+                        <div class="bg-slate-900/50 rounded-lg p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs text-slate-500">Remaining</span>
                             </div>
-                            <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">Filament Used</div>
-                                <div class="font-mono text-xl font-bold text-slate-200">—</div>
-                                <div class="text-xs text-slate-500 mt-1">Not available from API</div>
-                            </div>
+                            <div class="font-mono text-lg font-bold text-orange-400">45m</div>
                         </div>
+                        <div class="bg-slate-900/50 rounded-lg p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs text-slate-500">ETA</span>
+                            </div>
+                            <div class="font-mono text-lg font-bold text-green-400">15:17</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layer & Material Stats -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                        <div class="text-xs text-slate-500 mb-1">Current Layer</div>
+                        <div class="font-mono text-xl font-bold text-slate-200">145 <span class="text-sm text-slate-500">/ 223</span></div>
+                    </div>
+                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                        <div class="text-xs text-slate-500 mb-1">Filament Used</div>
+                        <div class="font-mono text-xl font-bold text-slate-200">24.3m <span class="text-sm text-slate-500">/ 35.1m</span></div>
                     </div>
                 </div>
             </div>
@@ -723,22 +687,13 @@
                 </div>
 
                 <div class="camera-container rounded-lg overflow-hidden relative border border-slate-700/50">
-                    <!-- Camera Stream -->
-                    <img id="camera-stream"
-                         src="/api/camera/stream"
-                         class="w-full h-full object-cover"
-                         style="display: none;"
-                         onerror="this.style.display='none'; document.getElementById('camera-placeholder').style.display='flex';"
-                         onload="this.style.display='block'; document.getElementById('camera-placeholder').style.display='none';">
-
-                    <!-- Placeholder (shown when camera unavailable) -->
-                    <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center">
+                    <!-- Placeholder -->
+                    <div class="absolute inset-0 flex items-center justify-center">
                         <div class="text-center">
                             <svg class="w-16 h-16 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                             </svg>
                             <p class="text-slate-500 text-sm">Camera Stream</p>
-                            <p class="text-slate-600 text-xs mt-1">Unavailable</p>
                         </div>
                     </div>
 
@@ -750,7 +705,7 @@
 
                     <!-- Timestamp -->
                     <div class="absolute bottom-3 right-3 px-3 py-1.5 bg-slate-900/80 backdrop-blur-sm rounded-lg border border-slate-700/50">
-                        <span id="camera-timestamp" class="text-xs font-mono text-slate-300">00:00:00</span>
+                        <span class="text-xs font-mono text-slate-300">14:32:45</span>
                     </div>
                 </div>
             </div>
@@ -779,7 +734,7 @@
                                 Upload New
                             </button>
                             <button class="flex-1 py-2 px-3 text-slate-400 rounded-md text-sm font-medium hover:bg-slate-800/50">
-                                Internal Memory
+                                SD Card
                             </button>
                         </div>
                     </div>
@@ -815,375 +770,13 @@
         </div>
     </main>
 
-    <script>
-        // Load user info and update UI
-        async function loadUserInfo() {
-            try {
-                const response = await fetch('/auth/status');
-                const data = await response.json();
-
-                if (data.authenticated && data.email) {
-                    // Update user menu
-                    const email = data.email;
-                    const initial = email.charAt(0).toUpperCase();
-
-                    document.getElementById('user-avatar').textContent = initial;
-                    document.getElementById('user-email-short').textContent = email.split('@')[0];
-                    document.getElementById('user-email-full').textContent = email;
-
-                    // Show settings button only for admins
-                    if (data.is_admin) {
-                        document.getElementById('settings-btn').style.display = 'block';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user info:', error);
-            }
-        }
-
-        // API functions
-        async function fetchStatus() {
-            try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                updateUI(data);
-            } catch (error) {
-                console.error('Error fetching status:', error);
-            }
-        }
-
-        async function fetchPosition() {
-            try {
-                const response = await fetch('/api/position');
-                const data = await response.json();
-                updatePosition(data);
-            } catch (error) {
-                console.error('Error fetching position:', error);
-            }
-        }
-
-        async function sendControl(command) {
-            try {
-                await fetch('/api/control', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command })
-                });
-                fetchStatus();
-            } catch (error) {
-                console.error('Error sending control:', error);
-            }
-        }
-
-        async function setTemperature(target, temperature) {
-            try {
-                await fetch('/api/temperature', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target, temperature })
-                });
-            } catch (error) {
-                console.error('Error setting temperature:', error);
-            }
-        }
-
-        // Update UI with status data
-        function updateUI(data) {
-            // Status
-            const statusText = document.querySelector('.text-3xl.font-bold.text-orange-400');
-            if (statusText) statusText.textContent = data.status.toUpperCase();
-
-            // Connection status
-            const connectionDot = document.querySelector('.bg-green-500.pulse-dot');
-            const connectionText = connectionDot?.nextElementSibling;
-            if (connectionDot && connectionText) {
-                if (data.connected) {
-                    connectionDot.className = 'w-2 h-2 rounded-full bg-green-500 pulse-dot';
-                    connectionText.textContent = 'Online';
-                    connectionText.className = 'text-sm font-medium text-green-400';
-                } else {
-                    connectionDot.className = 'w-2 h-2 rounded-full bg-red-500';
-                    connectionText.textContent = 'Offline';
-                    connectionText.className = 'text-sm font-medium text-red-400';
-                }
-            }
-
-            // Temperatures
-            const nozzleTempElements = document.querySelectorAll('.text-2xl.font-bold.text-orange-400');
-            if (nozzleTempElements[0]) {
-                nozzleTempElements[0].textContent = `${Math.round(data.nozzle_temp)}°C`;
-                const nozzleTarget = nozzleTempElements[0].nextElementSibling;
-                if (nozzleTarget) nozzleTarget.textContent = `/ ${Math.round(data.nozzle_target)}°C`;
-            }
-
-            const bedTempElements = document.querySelectorAll('.text-2xl.font-bold.text-blue-400');
-            if (bedTempElements[0]) {
-                bedTempElements[0].textContent = `${Math.round(data.bed_temp)}°C`;
-                const bedTarget = bedTempElements[0].nextElementSibling;
-                if (bedTarget) bedTarget.textContent = `/ ${Math.round(data.bed_target)}°C`;
-            }
-
-            // Temperature bars
-            const nozzleBar = document.querySelector('.temp-bar-nozzle');
-            if (nozzleBar && data.nozzle_target > 0) {
-                const nozzlePercent = Math.min(100, (data.nozzle_temp / data.nozzle_target) * 100);
-                nozzleBar.style.width = `${nozzlePercent}%`;
-            }
-
-            const bedBar = document.querySelector('.temp-bar-bed');
-            if (bedBar && data.bed_target > 0) {
-                const bedPercent = Math.min(100, (data.bed_temp / data.bed_target) * 100);
-                bedBar.style.width = `${bedPercent}%`;
-            }
-
-            // Progress
-            const progressPercent = document.querySelector('.text-4xl.font-bold.bg-gradient-to-r');
-            if (progressPercent) progressPercent.textContent = `${data.progress}%`;
-
-            const progressBar = document.querySelector('.progress-bar');
-            if (progressBar) progressBar.style.width = `${data.progress}%`;
-
-            // Print progress card - toggle between active print and no print states
-            const noPrintState = document.getElementById('no-print-state');
-            const activePrintState = document.getElementById('active-print-state');
-
-            if (data.gcode_filename) {
-                // Active print - show print info
-                if (noPrintState) noPrintState.style.display = 'none';
-                if (activePrintState) activePrintState.style.display = 'block';
-
-                // Update filename
-                const printFilename = document.getElementById('print-filename');
-                if (printFilename) printFilename.textContent = data.gcode_filename;
-
-                // Update time remaining
-                const timeRemaining = document.getElementById('print-time-remaining');
-                if (timeRemaining && data.time_remaining_formatted) {
-                    timeRemaining.textContent = data.time_remaining_formatted.substring(0, data.time_remaining_formatted.lastIndexOf(':'));
-                }
-
-                // Update progress text
-                const progressText = document.getElementById('print-progress-text');
-                if (progressText) progressText.textContent = `${data.progress}%`;
-            } else {
-                // No active print - show placeholder
-                if (noPrintState) noPrintState.style.display = 'block';
-                if (activePrintState) activePrintState.style.display = 'none';
-            }
-
-            // Update button states based on printer status
-            updateButtonStates(data.status);
-        }
-
-        function updateButtonStates(status) {
-            const playBtn = document.querySelector('button[title*="Resume"]');
-            const pauseBtn = document.querySelector('button[title*="Pause"]');
-            const stopBtn = document.querySelector('button[title*="Cancel Print"]');
-
-            if (status === 'PRINTING') {
-                // Disable play, enable pause/stop
-                if (playBtn) {
-                    playBtn.disabled = true;
-                    playBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                }
-                if (pauseBtn) {
-                    pauseBtn.disabled = false;
-                    pauseBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-                }
-                if (stopBtn) {
-                    stopBtn.disabled = false;
-                    stopBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-                }
-            } else if (status === 'PAUSED') {
-                // Enable play, disable pause, enable stop
-                if (playBtn) {
-                    playBtn.disabled = false;
-                    playBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-                }
-                if (pauseBtn) {
-                    pauseBtn.disabled = true;
-                    pauseBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                }
-                if (stopBtn) {
-                    stopBtn.disabled = false;
-                    stopBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-                }
-            } else {
-                // Idle - disable all
-                if (playBtn) {
-                    playBtn.disabled = true;
-                    playBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                }
-                if (pauseBtn) {
-                    pauseBtn.disabled = true;
-                    pauseBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                }
-                if (stopBtn) {
-                    stopBtn.disabled = true;
-                    stopBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                }
-            }
-        }
-
-        function updatePosition(data) {
-            const positions = document.querySelectorAll('.text-lg.font-bold');
-            if (positions[0]) positions[0].textContent = data.x.toFixed(1);
-            if (positions[1]) positions[1].textContent = data.y.toFixed(1);
-            if (positions[2]) positions[2].textContent = data.z.toFixed(1);
-        }
-
-        // Wire up control buttons
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load user info
-            loadUserInfo();
-
-            // Sign out button
-            const signOutBtn = document.getElementById('sign-out-btn');
-            if (signOutBtn) {
-                signOutBtn.addEventListener('click', async () => {
-                    try {
-                        await fetch('/auth/logout', { method: 'POST' });
-                        window.location.href = '/login.html';
-                    } catch (error) {
-                        console.error('Error signing out:', error);
-                    }
-                });
-            }
-
-            // Emergency stop
-            const emergencyStop = document.querySelector('.stop-sign');
-            if (emergencyStop) {
-                emergencyStop.addEventListener('click', () => {
-                    if (confirm('EMERGENCY STOP: This will immediately halt all printer operations. Continue?')) {
-                        sendControl('emergency_stop');
-                    }
-                });
-            }
-
-            // VCR controls
-            const playBtn = document.querySelector('button[title*="Resume"]');
-            if (playBtn) {
-                playBtn.addEventListener('click', () => sendControl('resume'));
-            }
-
-            const pauseBtn = document.querySelector('button[title*="Pause"]');
-            if (pauseBtn) {
-                pauseBtn.addEventListener('click', () => sendControl('pause'));
-            }
-
-            const stopBtn = document.querySelector('button[title*="Cancel Print"]');
-            if (stopBtn) {
-                stopBtn.addEventListener('click', () => {
-                    if (confirm('Cancel the current print job?')) {
-                        sendControl('stop');
-                    }
-                });
-            }
-
-            // LED control
-            const ledBtn = document.querySelector('button .text-yellow-400').closest('button');
-            if (ledBtn) {
-                ledBtn.addEventListener('click', async () => {
-                    // Toggle LED - we'll fetch status first to know current state
-                    const response = await fetch('/api/status');
-                    const data = await response.json();
-                    sendControl(data.led_on ? 'led_off' : 'led_on');
-                });
-            }
-
-            // Temperature controls
-            setupTempControls();
-
-            // Settings button
-            const settingsBtn = document.querySelector('button .text-purple-400')?.closest('button');
-            if (settingsBtn) {
-                settingsBtn.addEventListener('click', () => {
-                    window.location.href = '/settings.html';
-                });
-            }
-
-            // Camera snapshot button
-            const snapshotBtn = document.querySelector('button[title="Take Snapshot"]');
-            if (snapshotBtn) {
-                snapshotBtn.addEventListener('click', async () => {
-                    const response = await fetch('/api/camera');
-                    const data = await response.json();
-                    window.open(data.snapshot_url, '_blank');
-                });
-            }
-
-            // Start periodic updates
-            fetchStatus();
-            fetchPosition();
-            setInterval(fetchStatus, 2000);
-            setInterval(fetchPosition, 5000);
-
-            // Update camera timestamp
-            updateCameraTimestamp();
-            setInterval(updateCameraTimestamp, 1000);
-        });
-
-        function updateCameraTimestamp() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timestamp = document.getElementById('camera-timestamp');
-            if (timestamp) {
-                timestamp.textContent = `${hours}:${minutes}:${seconds}`;
-            }
-        }
-
-        function setupTempControls() {
-            // Nozzle temp controls
-            const nozzleInput = document.querySelector('input[value="210"]');
-            const nozzleMinus = nozzleInput?.previousElementSibling;
-            const nozzlePlus = nozzleInput?.nextElementSibling;
-            const nozzleSet = nozzlePlus?.nextElementSibling;
-
-            if (nozzleMinus) {
-                nozzleMinus.addEventListener('click', () => {
-                    nozzleInput.value = Math.max(0, parseInt(nozzleInput.value) - 5);
-                });
-            }
-
-            if (nozzlePlus) {
-                nozzlePlus.addEventListener('click', () => {
-                    nozzleInput.value = Math.min(300, parseInt(nozzleInput.value) + 5);
-                });
-            }
-
-            if (nozzleSet) {
-                nozzleSet.addEventListener('click', () => {
-                    setTemperature('nozzle', parseInt(nozzleInput.value));
-                });
-            }
-
-            // Bed temp controls
-            const bedInput = document.querySelector('input[value="60"]');
-            const bedMinus = bedInput?.previousElementSibling;
-            const bedPlus = bedInput?.nextElementSibling;
-            const bedSet = bedPlus?.nextElementSibling;
-
-            if (bedMinus) {
-                bedMinus.addEventListener('click', () => {
-                    bedInput.value = Math.max(0, parseInt(bedInput.value) - 5);
-                });
-            }
-
-            if (bedPlus) {
-                bedPlus.addEventListener('click', () => {
-                    bedInput.value = Math.min(120, parseInt(bedInput.value) + 5);
-                });
-            }
-
-            if (bedSet) {
-                bedSet.addEventListener('click', () => {
-                    setTemperature('bed', parseInt(bedInput.value));
-                });
-            }
-        }
-    </script>
+    <!-- Design Notes Banner -->
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border border-blue-400/50 rounded-full shadow-2xl backdrop-blur-sm z-50">
+        <p class="text-sm text-center text-white font-medium">
+            <span class="font-bold">✨ UI Redesign Demo v2</span> • Dynamic Background & Rebalanced Layout •
+            <a href="/index.html" class="underline hover:text-blue-200 ml-2">Return to current dashboard</a>
+        </p>
+    </div>
 
 </body>
 </html>

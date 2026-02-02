@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - FlashForge Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Dynamic Animated Background with Schematic Pattern */
+        body {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #1e293b, #312e81);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            position: relative;
+        }
+
+        /* Schematic/Technical Grid Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(100, 116, 139, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 116, 139, 0.3) 1px, transparent 1px),
+                linear-gradient(rgba(100, 116, 139, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 116, 139, 0.15) 1px, transparent 1px),
+                repeating-linear-gradient(45deg, transparent, transparent 50px, rgba(59, 130, 246, 0.1) 50px, rgba(59, 130, 246, 0.1) 52px),
+                repeating-linear-gradient(-45deg, transparent, transparent 50px, rgba(249, 115, 22, 0.1) 50px, rgba(249, 115, 22, 0.1) 52px);
+            background-size:
+                100px 100px,
+                100px 100px,
+                20px 20px,
+                20px 20px,
+                200px 200px,
+                200px 200px;
+            background-position:
+                -1px -1px,
+                -1px -1px,
+                0 0,
+                0 0,
+                0 0,
+                100px 100px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating orbs for depth */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #f97316, #fb923c);
+            top: -200px;
+            right: -200px;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            bottom: -150px;
+            left: -150px;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -50px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* Content above background */
+        main {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Card styling */
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .google-btn {
+            transition: all 0.2s;
+        }
+
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .google-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+
+    <!-- Animated Background Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <!-- Login Content -->
+    <main class="min-h-screen flex items-center justify-center px-6 py-12">
+        <div class="card rounded-xl p-8 max-w-md w-full">
+            <!-- Logo/Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent mb-2">
+                    FlashForge Monitor
+                </h1>
+                <p class="text-slate-400 text-sm">
+                    Sign in to access your 3D printer dashboard
+                </p>
+            </div>
+
+            <!-- Google Sign-In Button -->
+            <a href="/auth/login"
+               class="google-btn flex items-center justify-center gap-3 w-full py-3 px-4 bg-white hover:bg-gray-50 text-gray-800 font-medium rounded-lg border border-gray-200">
+                <!-- Google Logo SVG -->
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none" fill-rule="evenodd">
+                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                        <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
+                        <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                        <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+                    </g>
+                </svg>
+                <span>Sign in with Google</span>
+            </a>
+
+            <!-- Error Message Display -->
+            <div id="error-message" class="hidden mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-center">
+                <p class="text-red-200 text-sm"></p>
+            </div>
+
+            <!-- Info Text -->
+            <div class="mt-6 text-center">
+                <p class="text-slate-500 text-xs">
+                    Only authorized email addresses can access this dashboard.
+                </p>
+            </div>
+
+            <!-- Version Badge -->
+            <div class="mt-8 text-center">
+                <span class="px-3 py-1 bg-slate-700/50 border border-slate-600/50 rounded-full text-xs text-slate-400">v1.3.0</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check for error parameter in URL
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+
+            if (error) {
+                const errorMessage = document.getElementById('error-message');
+                const errorText = errorMessage.querySelector('p');
+
+                let message = 'Authentication failed. Please try again.';
+
+                switch(error) {
+                    case 'unauthorized':
+                        message = 'Your email address is not authorized to access this dashboard.';
+                        break;
+                    case 'invalid_state':
+                        message = 'Invalid authentication state. Please try again.';
+                        break;
+                    case 'no_email':
+                        message = 'Could not retrieve email from Google. Please try again.';
+                        break;
+                    case 'auth_failed':
+                        message = 'Authentication failed. Please try again.';
+                        break;
+                }
+
+                errorText.textContent = message;
+                errorMessage.classList.remove('hidden');
+
+                // Clear error from URL after 5 seconds
+                setTimeout(() => {
+                    window.history.replaceState({}, document.title, '/login.html');
+                }, 5000);
+            }
+        });
+    </script>
+
+</body>
+</html>

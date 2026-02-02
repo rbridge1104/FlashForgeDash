@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - FlashForge Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Dynamic Animated Background with Schematic Pattern */
+        body {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #1e293b, #312e81);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            position: relative;
+        }
+
+        /* Schematic/Technical Grid Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(100, 116, 139, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 116, 139, 0.3) 1px, transparent 1px),
+                linear-gradient(rgba(100, 116, 139, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 116, 139, 0.15) 1px, transparent 1px),
+                repeating-linear-gradient(45deg, transparent, transparent 50px, rgba(59, 130, 246, 0.1) 50px, rgba(59, 130, 246, 0.1) 52px),
+                repeating-linear-gradient(-45deg, transparent, transparent 50px, rgba(249, 115, 22, 0.1) 50px, rgba(249, 115, 22, 0.1) 52px);
+            background-size:
+                100px 100px,
+                100px 100px,
+                20px 20px,
+                20px 20px,
+                200px 200px,
+                200px 200px;
+            background-position:
+                -1px -1px,
+                -1px -1px,
+                0 0,
+                0 0,
+                0 0,
+                100px 100px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating orbs for depth */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #f97316, #fb923c);
+            top: -200px;
+            right: -200px;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            bottom: -150px;
+            left: -150px;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -50px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* Content above background */
+        main {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Enhanced card styling */
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover {
+            border-color: rgba(71, 85, 105, 0.8);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Glassmorphism header */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        /* Realistic Stop Sign */
+        .stop-sign-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stop-sign {
+            width: 52px;
+            height: 52px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            background: #DC143C;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow:
+                0 0 0 4px #FFFFFF,
+                0 4px 12px rgba(220, 20, 60, 0.5),
+                inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .stop-sign::before {
+            content: 'STOP';
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 900;
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .stop-sign:hover {
+            background: #B91C1C;
+            box-shadow:
+                0 0 0 4px #FFFFFF,
+                0 6px 20px rgba(220, 20, 60, 0.7),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            transform: scale(1.08);
+        }
+
+        .stop-sign:active {
+            transform: scale(0.98);
+            box-shadow:
+                0 0 0 4px #FFFFFF,
+                0 2px 8px rgba(220, 20, 60, 0.5),
+                inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .stop-sign-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(248, 113, 113, 0.9);
+            font-weight: 700;
+        }
+
+        /* Input styling */
+        input[type="text"],
+        input[type="number"],
+        input[type="url"] {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Smooth transitions */
+        * {
+            transition-property: color, background-color, border-color, transform;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.8);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.9);
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+
+    <!-- Animated Background Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <!-- Compact Sticky Header -->
+    <header class="h-16 glass sticky top-0 z-50">
+        <div class="max-w-[1800px] mx-auto px-6 h-full flex items-center justify-between">
+
+            <!-- Left: Branding & Printer Info -->
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                    FlashForge
+                </h1>
+                <div class="h-6 w-px bg-slate-600"></div>
+                <div class="text-sm text-slate-300">Settings</div>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-4">
+                <!-- Emergency Stop Sign -->
+                <div class="stop-sign-container">
+                    <button class="stop-sign" title="EMERGENCY HALT - Immediately stops all operations"></button>
+                    <span class="stop-sign-label">Emergency</span>
+                </div>
+
+                <div class="h-8 w-px bg-slate-700"></div>
+
+                <!-- User Menu Dropdown -->
+                <div class="relative group">
+                    <button class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-sm backdrop-blur-sm">
+                        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold" id="user-avatar">
+                            ?
+                        </div>
+                        <span id="user-email-short" class="text-slate-300">User</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-56 card rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                        <div class="p-3 border-b border-slate-700/50">
+                            <div class="text-xs text-slate-500 mb-1">Signed in as</div>
+                            <div id="user-email-full" class="text-sm text-slate-200 font-medium break-all">user@example.com</div>
+                        </div>
+                        <div class="p-2">
+                            <button id="sign-out-btn" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-600/50 rounded-md text-sm text-red-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-8 w-px bg-slate-700"></div>
+
+                <!-- Back to Dashboard -->
+                <a href="/" class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-sm backdrop-blur-sm">
+                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Version Badge -->
+                <span class="px-3 py-1 bg-slate-700/50 border border-slate-600/50 rounded-full text-xs text-slate-300 backdrop-blur-sm">v1.3.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-[1200px] mx-auto px-6 py-8">
+
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Configuration</h2>
+            <p class="text-slate-400">Manage your printer connection, notifications, and preferences</p>
+        </div>
+
+        <!-- Settings Cards -->
+        <div class="grid grid-cols-1 gap-6">
+
+            <!-- Printer Configuration -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-100">Printer Connection</h3>
+                        <p class="text-sm text-slate-400">FlashForge Adventurer 3 configuration</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Printer IP -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            Printer IP Address
+                        </label>
+                        <input type="text" id="printer-ip" placeholder="192.168.1.100"
+                            class="w-full px-4 py-3 rounded-lg text-slate-100 font-mono">
+                        <p class="text-xs text-slate-500 mt-1">Find this in your printer's network settings</p>
+                    </div>
+
+                    <!-- Control Port -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            Control Port
+                        </label>
+                        <input type="number" id="control-port" value="8899"
+                            class="w-full px-4 py-3 rounded-lg text-slate-100 font-mono">
+                        <p class="text-xs text-slate-500 mt-1">Default: 8899 (rarely needs changing)</p>
+                    </div>
+
+                    <!-- Camera Port -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            Camera Port
+                        </label>
+                        <input type="number" id="camera-port" value="8080"
+                            class="w-full px-4 py-3 rounded-lg text-slate-100 font-mono">
+                        <p class="text-xs text-slate-500 mt-1">Default: 8080 (rarely needs changing)</p>
+                    </div>
+
+                    <!-- Poll Interval -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            Status Poll Interval (seconds)
+                        </label>
+                        <input type="number" id="poll-interval" value="5" min="1" max="60"
+                            class="w-full px-4 py-3 rounded-lg text-slate-100 font-mono">
+                        <p class="text-xs text-slate-500 mt-1">How often to check printer status</p>
+                    </div>
+                </div>
+
+                <!-- Test Connection Button -->
+                <div class="mt-6 pt-6 border-t border-slate-700/50">
+                    <button id="test-connection" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium border border-blue-500/50">
+                        Test Connection
+                    </button>
+                    <span id="connection-status" class="ml-4 text-sm"></span>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-100">Notifications</h3>
+                        <p class="text-sm text-slate-400">Webhook integration for print completion alerts</p>
+                    </div>
+                </div>
+
+                <!-- Webhook URL -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        n8n Webhook URL (optional)
+                    </label>
+                    <input type="url" id="webhook-url" placeholder="https://your-n8n-instance.com/webhook/..."
+                        class="w-full px-4 py-3 rounded-lg text-slate-100">
+                    <p class="text-xs text-slate-500 mt-1">Receive notifications when prints complete or errors occur</p>
+                </div>
+
+                <!-- Notification Options -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="notify-complete" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-purple-600 focus:ring-purple-500">
+                        <span class="text-sm text-slate-300">Notify on print completion</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="notify-error" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-purple-600 focus:ring-purple-500">
+                        <span class="text-sm text-slate-300">Notify on errors</span>
+                    </label>
+                </div>
+
+                <!-- Test Notification -->
+                <div class="mt-6 pt-6 border-t border-slate-700/50">
+                    <button id="test-notification" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-lg font-medium border border-purple-500/50">
+                        Send Test Notification
+                    </button>
+                    <span id="notification-status" class="ml-4 text-sm"></span>
+                </div>
+            </div>
+
+            <!-- Material Presets -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-100">Material Presets</h3>
+                        <p class="text-sm text-slate-400">Quick temperature presets for common filaments</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- PLA -->
+                    <div class="p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                        <div class="text-sm font-medium text-orange-400 mb-3">PLA</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Nozzle</label>
+                                <input type="number" value="200" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Bed</label>
+                                <input type="number" value="60" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PETG -->
+                    <div class="p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                        <div class="text-sm font-medium text-orange-400 mb-3">PETG</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Nozzle</label>
+                                <input type="number" value="235" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Bed</label>
+                                <input type="number" value="80" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABS -->
+                    <div class="p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                        <div class="text-sm font-medium text-orange-400 mb-3">ABS</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Nozzle</label>
+                                <input type="number" value="230" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Bed</label>
+                                <input type="number" value="100" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ASA -->
+                    <div class="p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                        <div class="text-sm font-medium text-orange-400 mb-3">ASA</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Nozzle</label>
+                                <input type="number" value="240" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">Bed</label>
+                                <input type="number" value="100" class="w-full px-3 py-2 rounded-lg text-slate-100 font-mono text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Management (Admin Only) -->
+            <div id="access-management-card" class="card rounded-xl p-6" style="display: none;">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-100">Access Management</h3>
+                        <p class="text-sm text-slate-400">Review and approve pending access requests</p>
+                    </div>
+                </div>
+
+                <!-- Pending Requests List -->
+                <div id="pending-requests-container">
+                    <div id="pending-requests-empty" class="text-center py-8 text-slate-500" style="display: none;">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm">No pending requests</p>
+                    </div>
+
+                    <div id="pending-requests-list" class="space-y-3">
+                        <!-- Pending requests will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- Refresh Button -->
+                <div class="mt-6 pt-6 border-t border-slate-700/50">
+                    <button id="refresh-requests" class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-lg font-medium border border-red-500/50">
+                        Refresh Requests
+                    </button>
+                </div>
+            </div>
+
+            <!-- Save All Button -->
+            <div class="card rounded-xl p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-100 mb-1">Save Configuration</h3>
+                        <p class="text-sm text-slate-400">All changes will be applied immediately</p>
+                    </div>
+                    <button id="save-all" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg font-bold border border-blue-500/50 shadow-lg shadow-blue-500/20">
+                        Save All Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-2xl transform translate-y-full opacity-0 transition-all duration-300">
+        <p id="toast-message" class="text-sm"></p>
+    </div>
+
+    <script>
+        // Load user info and show admin sections
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+
+                if (data.authenticated && data.email) {
+                    const email = data.email;
+                    const initial = email.charAt(0).toUpperCase();
+
+                    document.getElementById('user-avatar').textContent = initial;
+                    document.getElementById('user-email-short').textContent = email.split('@')[0];
+                    document.getElementById('user-email-full').textContent = email;
+
+                    // Show access management card for admins
+                    if (data.is_admin) {
+                        document.getElementById('access-management-card').style.display = 'block';
+                        loadPendingRequests();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // Load pending access requests
+        async function loadPendingRequests() {
+            try {
+                const response = await fetch('/api/admin/requests');
+                const data = await response.json();
+
+                const listContainer = document.getElementById('pending-requests-list');
+                const emptyState = document.getElementById('pending-requests-empty');
+
+                if (data.pending && data.pending.length > 0) {
+                    listContainer.innerHTML = '';
+                    emptyState.style.display = 'none';
+
+                    data.pending.forEach(email => {
+                        const row = createRequestRow(email);
+                        listContainer.appendChild(row);
+                    });
+                } else {
+                    listContainer.innerHTML = '';
+                    emptyState.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading pending requests:', error);
+            }
+        }
+
+        // Create a request row element
+        function createRequestRow(email) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700/50';
+
+            row.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-sm font-bold text-blue-400">
+                        ${email.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="font-medium text-slate-200">${email}</div>
+                        <div class="text-xs text-slate-500">Pending approval</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="approveUser('${email}')" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 rounded-lg text-sm font-medium border border-green-500/50">
+                        Approve
+                    </button>
+                    <button onclick="denyUser('${email}')" class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-lg text-sm font-medium border border-red-500/50">
+                        Deny
+                    </button>
+                </div>
+            `;
+
+            return row;
+        }
+
+        // Approve user
+        async function approveUser(email) {
+            try {
+                const response = await fetch('/api/admin/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Approved ${email}`, 'success');
+                    loadPendingRequests();
+                } else {
+                    showToast('Failed to approve user', 'error');
+                }
+            } catch (error) {
+                showToast('Error approving user', 'error');
+            }
+        }
+
+        // Deny user
+        async function denyUser(email) {
+            if (!confirm(`Deny access for ${email}?`)) return;
+
+            try {
+                const response = await fetch('/api/admin/deny', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`Denied ${email}`, 'success');
+                    loadPendingRequests();
+                } else {
+                    showToast('Failed to deny user', 'error');
+                }
+            } catch (error) {
+                showToast('Error denying user', 'error');
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+            toast.className = toast.className.replace(/border-\w+-\d+/g, '');
+
+            if (type === 'success') {
+                toast.classList.add('border-green-500');
+                toastMessage.className = 'text-sm text-green-400';
+            } else if (type === 'error') {
+                toast.classList.add('border-red-500');
+                toastMessage.className = 'text-sm text-red-400';
+            } else {
+                toast.classList.add('border-slate-700');
+                toastMessage.className = 'text-sm text-slate-400';
+            }
+
+            toast.classList.remove('translate-y-full', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+            }, 3000);
+        }
+
+        // Load current configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config/full');
+                const data = await response.json();
+
+                document.getElementById('printer-ip').value = data.printer?.ip_address || '';
+                document.getElementById('control-port').value = data.printer?.control_port || 8899;
+                document.getElementById('camera-port').value = data.printer?.camera_port || 8080;
+                document.getElementById('poll-interval').value = data.printer?.poll_interval || 5;
+                document.getElementById('webhook-url').value = data.notifications?.n8n_webhook_url || '';
+                document.getElementById('notify-complete').checked = data.notifications?.notify_on_complete !== false;
+                document.getElementById('notify-error').checked = data.notifications?.notify_on_error !== false;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                showToast('Failed to load settings', 'error');
+            }
+        }
+
+        // Test connection
+        document.getElementById('test-connection').addEventListener('click', async () => {
+            const btn = document.getElementById('test-connection');
+            const status = document.getElementById('connection-status');
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            status.textContent = '';
+
+            try {
+                const response = await fetch('/api/reconnect', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    status.textContent = '✓ Connected successfully';
+                    status.className = 'ml-4 text-sm text-green-400';
+                } else {
+                    status.textContent = '✗ Connection failed';
+                    status.className = 'ml-4 text-sm text-red-400';
+                }
+            } catch (error) {
+                status.textContent = '✗ Connection error';
+                status.className = 'ml-4 text-sm text-red-400';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Connection';
+            }
+        });
+
+        // Test notification
+        document.getElementById('test-notification').addEventListener('click', async () => {
+            const btn = document.getElementById('test-notification');
+            const status = document.getElementById('notification-status');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            status.textContent = '';
+
+            try {
+                const response = await fetch('/api/notifications/test', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    status.textContent = '✓ Notification sent';
+                    status.className = 'ml-4 text-sm text-green-400';
+                } else {
+                    status.textContent = '✗ Failed to send';
+                    status.className = 'ml-4 text-sm text-red-400';
+                }
+            } catch (error) {
+                status.textContent = '✗ Error occurred';
+                status.className = 'ml-4 text-sm text-red-400';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Test Notification';
+            }
+        });
+
+        // Save all settings
+        document.getElementById('save-all').addEventListener('click', async () => {
+            const btn = document.getElementById('save-all');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const config = {
+                    printer_ip: document.getElementById('printer-ip').value,
+                    control_port: parseInt(document.getElementById('control-port').value),
+                    camera_port: parseInt(document.getElementById('camera-port').value),
+                    poll_interval: parseInt(document.getElementById('poll-interval').value),
+                    n8n_webhook_url: document.getElementById('webhook-url').value,
+                    notify_on_complete: document.getElementById('notify-complete').checked,
+                    notify_on_error: document.getElementById('notify-error').checked
+                };
+
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Settings saved successfully', 'success');
+                } else {
+                    showToast('Failed to save settings', 'error');
+                }
+            } catch (error) {
+                showToast('Error saving settings', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save All Settings';
+            }
+        });
+
+        // Load config and user info on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            loadUserInfo();
+
+            // Sign out button
+            const signOutBtn = document.getElementById('sign-out-btn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async () => {
+                    try {
+                        await fetch('/auth/logout', { method: 'POST' });
+                        window.location.href = '/login.html';
+                    } catch (error) {
+                        console.error('Error signing out:', error);
+                    }
+                });
+            }
+
+            // Refresh requests button
+            const refreshBtn = document.getElementById('refresh-requests');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadPendingRequests);
+            }
+        });
+    </script>
+</body>
+</html>

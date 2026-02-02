@@ -299,32 +299,103 @@ class PrinterClient:
         """Get the current printer state."""
         return self.state
 
+    # Additional control commands
+
+    def fan_on(self) -> bool:
+        """Turn on cooling fan (M106)."""
+        with self._lock:
+            response = self._send_command("~M106")
+            return response is not None and "ok" in response.lower()
+
+    def fan_off(self) -> bool:
+        """Turn off cooling fan (M107)."""
+        with self._lock:
+            response = self._send_command("~M107")
+            return response is not None and "ok" in response.lower()
+
+    def disable_motors(self) -> bool:
+        """Disable stepper motors (M18) - allows manual movement."""
+        with self._lock:
+            response = self._send_command("~M18")
+            return response is not None and "ok" in response.lower()
+
+    def home_axes(self) -> bool:
+        """Home all axes (G28)."""
+        with self._lock:
+            response = self._send_command("~G28")
+            return response is not None and "ok" in response.lower()
+
+    def get_position(self) -> dict:
+        """Get current position (M114)."""
+        with self._lock:
+            response = self._send_command("~M114")
+            if not response:
+                return {"x": 0, "y": 0, "z": 0}
+
+            # Parse response like: X:125.0 Y:125.0 Z:0.0
+            position = {"x": 0, "y": 0, "z": 0}
+            try:
+                if "X:" in response:
+                    x_part = response.split("X:")[1].split()[0]
+                    position["x"] = float(x_part)
+                if "Y:" in response:
+                    y_part = response.split("Y:")[1].split()[0]
+                    position["y"] = float(y_part)
+                if "Z:" in response:
+                    z_part = response.split("Z:")[1].split()[0]
+                    position["z"] = float(z_part)
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse position: {e}")
+
+            return position
+
     # File management commands
 
     def list_files(self) -> list[dict]:
-        """List files on the printer's SD card (M20)."""
+        """List files on the printer's internal storage.
+
+        Note: FlashForge Adventurer 3 uses internal storage, not SD card.
+        The M20 command may not work for internal storage.
+        This is a limitation of the FlashForge protocol.
+        """
         with self._lock:
+            # Try M20 for internal storage
             response = self._send_command("~M20")
             if not response:
+                logger.warning("No response from M20 command")
                 return []
 
+            logger.info(f"M20 response: {repr(response)}")
+
             files = []
-            for line in response.split('\n'):
+            lines = response.split('\n')
+
+            for line in lines:
                 line = line.strip()
-                # Parse file list format: filename.gcode SIZE bytes
-                if line and not line.startswith('ok') and not line.startswith('CMD'):
-                    # Try to extract filename
-                    if '.gcode' in line.lower() or '.gco' in line.lower() or '.g' in line.lower():
-                        parts = line.split()
-                        if parts:
-                            filename = parts[0]
-                            size = 0
-                            # Try to extract size if available
-                            for i, part in enumerate(parts):
-                                if part.isdigit() and i + 1 < len(parts) and 'byte' in parts[i + 1].lower():
-                                    size = int(part)
-                                    break
-                            files.append({'filename': filename, 'size': size})
+                # Skip command echo, received, and ok lines
+                if not line or line.startswith('ok') or line.startswith('CMD') or line.startswith('Received'):
+                    continue
+
+                # Look for any line that might be a filename
+                logger.info(f"Processing line: {repr(line)}")
+
+                # If line contains common file extensions
+                if any(ext in line.lower() for ext in ['.gcode', '.gco', '.g ']):
+                    parts = line.split()
+                    if parts:
+                        filename = parts[0]
+                        size = 0
+                        # Try to extract size if available
+                        for i, part in enumerate(parts):
+                            if part.isdigit() and i + 1 < len(parts) and 'byte' in parts[i + 1].lower():
+                                size = int(part)
+                                break
+                        files.append({'filename': filename, 'size': size})
+                        logger.info(f"Found file: {filename} ({size} bytes)")
+
+            if not files:
+                logger.info("No files found. Note: FlashForge Adventurer 3 uses internal storage. File listing via M20 may not be supported.")
+
             return files
 
     def start_print(self, filename: str) -> bool:

@@ -1,0 +1,24 @@
+# FlashForge Adventurer 3 Monitor Configuration
+# Copy this file to config.yaml and update with your printer's IP address
+
+printer:
+  ip_address: "192.168.1.XXX"  # Change to your printer's IP address
+  control_port: 8899            # TCP control port (default: 8899, usually don't change)
+  camera_port: 8080             # Camera stream port (default: 8080, usually don't change)
+  poll_interval: 5             # Status polling interval in seconds (default: 5)
+
+server:
+  host: "127.0.0.1"             # localhost only for security (recommended)
+                                 # Change to "0.0.0.0" if you need network access (NOT recommended)
+  port: 8000                     # Server port (default: 8000)
+  debug: false                   # Enable debug mode (set to true for development)
+
+notifications:
+  n8n_webhook_url: ""            # Webhook URL for notifications (e.g., https://your-n8n.domain/webhook/printer-status)
+                                 # Leave empty to disable notifications
+  notify_on_complete: true       # Send notification when print completes
+  notify_on_error: true          # Send notification on printer errors
+
+gcode:
+  upload_directory: "./uploads"   # Directory for uploaded G-code files
+  max_file_size_mb: 100          # Maximum file size in MB (default: 100)
