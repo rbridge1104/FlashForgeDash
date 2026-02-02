@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  flashforge-dash:
+    build: .
+    container_name: flashforge-dashboard
+    image: flashforge-dash:latest
+
+    # Port mapping
+    ports:
+      - "8000:8000"
+
+    # Environment variables
+    environment:
+      # Server configuration
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+
+      # OAuth configuration (set these in .env file)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+
+      # Printer configuration (can override config.yaml)
+      - PRINTER_IP=${PRINTER_IP:-192.168.1.200}
+      - PRINTER_POLL_INTERVAL=${PRINTER_POLL_INTERVAL:-5}
+
+      # Notification configuration
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-}
+
+    # Volume mounts
+    volumes:
+      # Configuration file (create from config.yaml.example)
+      - ./config.yaml:/app/config.yaml:ro
+
+      # Persistent data (user approvals, etc.)
+      - ./data:/app/data
+
+      # Optional: mount .env file instead of using environment variables
+      # - ./.env:/app/.env:ro
+
+    # Network mode for printer discovery
+    network_mode: bridge
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/auth/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+# Optional: Create a custom network for printer access
+# networks:
+#   printer-network:
+#     driver: bridge

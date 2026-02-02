@@ -189,6 +189,25 @@ gcode:
 
 ### 6. Start the Server
 
+**Option A: Using Docker (Recommended)**
+
+```bash
+# Copy environment file and configure
+cp .env.example .env
+# Edit .env with your OAuth credentials
+
+# Start with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+**Option B: Running Directly**
+
 ```bash
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
@@ -582,6 +601,118 @@ FlashForgeDash/
   - Initial release
   - Basic monitoring and control
 
+## 🐳 Docker Deployment
+
+### Using Docker Desktop (Windows/Mac)
+
+**Quick Start:**
+
+1. **Install Docker Desktop**
+   - Download from [docker.com](https://www.docker.com/products/docker-desktop)
+   - Start Docker Desktop
+
+2. **Clone and Configure**
+   ```bash
+   git clone https://github.com/yourusername/FlashForgeDash.git
+   cd FlashForgeDash
+
+   # Copy and configure environment
+   cp .env.example .env
+   # Edit .env with your Google OAuth credentials
+
+   # Copy and configure printer settings
+   cp config.yaml.example config.yaml
+   # Edit config.yaml with your printer IP
+   ```
+
+3. **Start the Application**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access Dashboard**
+   - Open browser: `http://localhost:8000`
+   - Sign in with Google
+
+**Docker Desktop Management:**
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Restart container
+docker-compose restart
+
+# Stop application
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+
+# View running containers
+docker ps
+```
+
+**Troubleshooting Docker:**
+
+- **Can't connect to printer**: Make sure Docker can access your local network
+  - In Docker Desktop: Settings → Resources → Network
+  - Or use `network_mode: "host"` in docker-compose.yml (Linux only)
+
+- **Port 8000 already in use**: Stop other services or change port in docker-compose.yml
+
+- **Configuration not updating**: Restart container after config changes
+
+### Using Docker CLI
+
+```bash
+# Build image
+docker build -t flashforge-dash .
+
+# Run container
+docker run -d \
+  --name flashforge-dashboard \
+  -p 8000:8000 \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  flashforge-dash
+
+# View logs
+docker logs -f flashforge-dashboard
+
+# Stop container
+docker stop flashforge-dashboard
+docker rm flashforge-dashboard
+```
+
+### Docker Image Details
+
+- **Base Image**: Python 3.12-slim
+- **Size**: ~150MB (optimized multi-stage build)
+- **User**: Non-root user (flashforge:1000)
+- **Health Check**: Built-in health monitoring
+- **Restart Policy**: Automatic restart on failure
+
+### Volume Mounts
+
+- `./config.yaml` → `/app/config.yaml` - Printer configuration
+- `./data` → `/app/data` - User approvals and persistent data
+- `./.env` → Environment variables (or use docker-compose env)
+
+### Environment Variables
+
+All configuration can be done via environment variables instead of config files:
+
+```yaml
+GOOGLE_CLIENT_ID=your-id
+GOOGLE_CLIENT_SECRET=your-secret
+SESSION_SECRET_KEY=random-key
+ADMIN_EMAILS=admin@example.com
+PRINTER_IP=192.168.1.200
+N8N_WEBHOOK_URL=https://your-webhook
+```
+
 ## 🎯 Future Enhancements
 
 - [ ] Print history and statistics database
@@ -592,7 +723,7 @@ FlashForgeDash/
 - [ ] Email notifications option
 - [ ] Mobile app (React Native)
 - [ ] Raspberry Pi installation guide
-- [ ] Docker containerization
+- [x] Docker containerization ✅
 
 ## 🤝 Contributing
 
