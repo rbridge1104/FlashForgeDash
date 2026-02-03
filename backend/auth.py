@@ -173,10 +173,11 @@ async def get_current_user(request: Request) -> dict:
     FastAPI dependency to get current authenticated user.
     Raises 401 if not authenticated.
     """
-    # Check if OAuth is configured
-    if not os.getenv("GOOGLE_CLIENT_ID"):
-        # OAuth not configured, allow access (dev mode)
+    if os.getenv("DEV_MODE") == "true":
         return {"email": "dev@localhost", "dev_mode": True}
+
+    if not os.getenv("GOOGLE_CLIENT_ID"):
+        raise HTTPException(status_code=503, detail="OAuth not configured")
 
     signed_session_id = request.cookies.get("session")
 
@@ -198,10 +199,11 @@ async def get_current_user(request: Request) -> dict:
 
 def is_authenticated(request: Request) -> bool:
     """Check if request has valid session (for HTML routes)."""
-    # Check if OAuth is configured
-    if not os.getenv("GOOGLE_CLIENT_ID"):
-        # OAuth not configured, allow access (dev mode)
+    if os.getenv("DEV_MODE") == "true":
         return True
+
+    if not os.getenv("GOOGLE_CLIENT_ID"):
+        return False
 
     signed_session_id = request.cookies.get("session")
 
@@ -218,8 +220,11 @@ def is_authenticated(request: Request) -> bool:
 
 def is_admin_user(request: Request) -> bool:
     """Check if current user is an admin."""
+    if os.getenv("DEV_MODE") == "true":
+        return True
+
     if not os.getenv("GOOGLE_CLIENT_ID"):
-        return True  # Dev mode - everyone is admin
+        return False
 
     signed_session_id = request.cookies.get("session")
     if not signed_session_id:
@@ -255,13 +260,16 @@ def get_pending_email(request: Request) -> Optional[str]:
 
 async def get_auth_status(request: Request) -> dict:
     """Get current authentication status (for frontend)."""
-    if not os.getenv("GOOGLE_CLIENT_ID"):
+    if os.getenv("DEV_MODE") == "true":
         return {
             "authenticated": True,
             "email": "dev@localhost",
             "dev_mode": True,
             "is_admin": True
         }
+
+    if not os.getenv("GOOGLE_CLIENT_ID"):
+        return {"authenticated": False, "error": "OAuth not configured"}
 
     signed_session_id = request.cookies.get("session")
 
