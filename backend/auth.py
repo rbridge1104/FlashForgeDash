@@ -7,6 +7,7 @@ and user authorization based on email whitelist.
 
 import os
 import secrets
+import logging
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -17,6 +18,8 @@ from itsdangerous import URLSafeSerializer
 
 from .session_store import session_store
 from .user_store import user_store
+
+audit_logger = logging.getLogger('flashforge.audit')
 
 
 # Initialize OAuth client
@@ -46,7 +49,9 @@ def configure_oauth():
 # Session serializer for signing session IDs
 def get_serializer() -> URLSafeSerializer:
     """Get session serializer with secret key."""
-    secret_key = os.getenv("SESSION_SECRET_KEY", "dev-secret-key-change-in-production")
+    secret_key = os.getenv("SESSION_SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("SESSION_SECRET_KEY environment variable is required")
     return URLSafeSerializer(secret_key)
 
 
@@ -115,17 +120,17 @@ async def handle_callback(request: Request):
                 key="session",
                 value=signed_session_id,
                 httponly=True,
-                secure=os.getenv("APP_ENV") == "production",  # HTTPS only in production
+                secure=True,
                 samesite="lax",
                 max_age=60 * 60 * 24 * 7  # 7 days
             )
 
-            print(f"Successful login: {email}")
+            audit_logger.info("LOGIN_SUCCESS email=%s", email)
             return response
 
         elif status == "denied":
             # Previously denied user
-            print(f"Denied login attempt: {email}")
+            audit_logger.warning("LOGIN_DENIED email=%s", email)
             return RedirectResponse("/login.html?error=unauthorized")
 
         elif status == "pending":
@@ -138,16 +143,16 @@ async def handle_callback(request: Request):
                 key="session",
                 value=signed_session_id,
                 httponly=True,
-                secure=os.getenv("APP_ENV") == "production",
+                secure=True,
                 samesite="lax",
                 max_age=60 * 60 * 24  # 1 day for pending sessions
             )
 
-            print(f"Pending access request: {email}")
+            audit_logger.info("LOGIN_PENDING email=%s", email)
             return response
 
     except Exception as e:
-        print(f"OAuth callback error: {e}")
+        audit_logger.error("LOGIN_ERROR error=%s", str(e))
         return RedirectResponse("/login.html?error=auth_failed")
 
 
@@ -159,6 +164,9 @@ async def handle_logout(request: Request):
     if signed_session_id:
         session_id = verify_session_id(signed_session_id)
         if session_id:
+            session = session_store.get_session(session_id)
+            if session:
+                audit_logger.info("LOGOUT email=%s", session["email"])
             session_store.delete_session(session_id)
 
     # Clear session cookie

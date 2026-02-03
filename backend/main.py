@@ -5,6 +5,7 @@ Provides REST API for printer status, control, and notifications.
 """
 
 import os
+import logging
 import asyncio
 import httpx
 import requests
@@ -25,10 +26,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from .printer_client import PrinterClient, PrinterState, PrinterStatus
 from .gcode_parser import GCodeParser, GCodeMetadata
 from . import auth
 from .user_store import user_store
+
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger('flashforge')
+audit_logger = logging.getLogger('flashforge.audit')
 
 # Load environment variables
 load_dotenv()
@@ -83,12 +95,29 @@ def validate_ip_address(ip: str) -> bool:
 
 
 def validate_webhook_url(url: str) -> bool:
-    """Validate webhook URL format."""
+    """Validate webhook URL format and block SSRF targets."""
     if not url:
         return True  # Empty URL is valid (disables webhooks)
     try:
         result = urlparse(url)
-        return all([result.scheme in ['http', 'https'], result.netloc])
+        if not all([result.scheme in ['http', 'https'], result.netloc]):
+            return False
+
+        host = result.netloc.split(':')[0].lower()
+
+        # Block localhost by name
+        if host in ('localhost', 'localhost.localdomain'):
+            return False
+
+        # Block private/internal/reserved IPs
+        try:
+            ip = ipaddress.ip_address(host)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return False
+        except ValueError:
+            pass  # Not an IP — hostname is allowed
+
+        return True
     except Exception:
         return False
 
@@ -119,7 +148,7 @@ async def send_notification(status: str, message: str) -> None:
         async with httpx.AsyncClient() as client:
             await client.post(webhook_url, json=payload, timeout=10.0)
     except Exception as e:
-        print(f"Failed to send notification: {e}")
+        logger.warning("Failed to send notification: %s", e)
 
 
 def status_change_callback(state: PrinterState) -> None:
@@ -149,9 +178,9 @@ def try_connect_printer():
         if printer_client and printer_client.connect():
             printer_client.add_status_callback(status_change_callback)
             printer_client.start_polling()
-            print(f"Connected to printer at {config['printer']['ip_address']}")
+            logger.info("Connected to printer at %s", config['printer']['ip_address'])
     except Exception as e:
-        print(f"Warning: Could not connect to printer: {e}")
+        logger.warning("Could not connect to printer: %s", e)
 
 
 @asynccontextmanager
@@ -184,13 +213,28 @@ app = FastAPI(
 # Configure OAuth
 oauth_configured = auth.configure_oauth()
 if oauth_configured:
-    print("✓ OAuth configured successfully")
+    logger.info("OAuth configured successfully")
 else:
-    print("⚠ OAuth not configured - running without authentication")
+    logger.warning("OAuth not configured - running without authentication")
 
 # Add Session middleware (required for OAuth)
-secret_key = os.getenv("SESSION_SECRET_KEY", "dev-secret-key-change-in-production")
+secret_key = os.getenv("SESSION_SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SESSION_SECRET_KEY environment variable is required")
 app.add_middleware(SessionMiddleware, secret_key=secret_key, session_cookie="_oauth_state")
+
+# Security headers middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Add CORS middleware for security
 app.add_middleware(
@@ -198,10 +242,11 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "https://flashforge.bridgeforge.online",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["content-type"],
 )
 
 # Mount static files
@@ -226,7 +271,16 @@ class StatusResponse(BaseModel):
 
 
 class ControlCommand(BaseModel):
-    command: str  # "emergency_stop", "led_on", "led_off", "pause", "resume"
+    command: str
+
+    @field_validator('command')
+    @classmethod
+    def validate_command(cls, v):
+        allowed = {'emergency_stop', 'led_on', 'led_off', 'pause', 'resume',
+                   'fan_on', 'fan_off', 'disable_motors', 'home_axes'}
+        if v not in allowed:
+            raise ValueError(f'command must be one of: {", ".join(sorted(allowed))}')
+        return v
 
 
 class ConfigUpdate(BaseModel):
@@ -279,7 +333,7 @@ async def activate_access(request: Request):
         return RedirectResponse("/pending.html")
 
     # User is approved - redirect to dashboard (session already exists from callback)
-    print(f"Activated approved user: {email}")
+    audit_logger.info("SESSION_ACTIVATED email=%s", email)
     return RedirectResponse("/")
 
 
@@ -324,7 +378,7 @@ async def approve_user(request: Request):
     success = user_store.approve(email)
 
     if success:
-        print(f"Admin approved access for: {email}")
+        audit_logger.info("ADMIN_APPROVE approved=%s", email)
         return {"success": True, "message": f"Approved {email}"}
     else:
         return {"success": False, "message": "User not found in pending list"}
@@ -345,7 +399,7 @@ async def deny_user(request: Request):
     success = user_store.deny(email)
 
     if success:
-        print(f"Admin denied access for: {email}")
+        audit_logger.info("ADMIN_DENY denied=%s", email)
         return {"success": True, "message": f"Denied {email}"}
     else:
         return {"success": False, "message": "User not found in pending list"}
@@ -504,6 +558,7 @@ async def control_printer(cmd: ControlCommand, user: dict = Depends(auth.get_cur
     else:
         raise HTTPException(status_code=400, detail=f"Unknown command: {cmd.command}")
 
+    audit_logger.info("PRINTER_CONTROL email=%s command=%s success=%s", user.get("email"), cmd.command, success)
     return {"success": success, "message": message}
 
 
@@ -523,8 +578,22 @@ async def get_position(user: dict = Depends(auth.get_current_user)):
 
 
 class TemperatureCommand(BaseModel):
-    target: str  # "nozzle" or "bed"
+    target: str
     temperature: int
+
+    @field_validator('target')
+    @classmethod
+    def validate_target(cls, v):
+        if v not in ('nozzle', 'bed'):
+            raise ValueError('target must be nozzle or bed')
+        return v
+
+    @field_validator('temperature')
+    @classmethod
+    def validate_temperature(cls, v):
+        if not (0 <= v <= 300):
+            raise ValueError('temperature must be between 0 and 300')
+        return v
 
 
 @app.post("/api/temperature")
@@ -568,7 +637,9 @@ async def upload_gcode(
     """Upload and parse a G-code file. Optionally upload to printer and/or start printing."""
     global current_gcode_metadata, print_start_time, printer_client
 
-    if not file.filename.lower().endswith(('.gcode', '.gco', '.g')):
+    # Sanitize filename — strip any directory components
+    safe_filename = Path(file.filename).name if file.filename else ""
+    if not safe_filename or not safe_filename.lower().endswith(('.gcode', '.gco', '.g')):
         raise HTTPException(status_code=400, detail="Invalid file type. Must be a G-code file.")
 
     # Read file content
@@ -600,8 +671,10 @@ async def upload_gcode(
 
     # Parse G-code for metadata
     parser = GCodeParser()
-    current_gcode_metadata = parser.parse_content(content_str, file.filename)
+    current_gcode_metadata = parser.parse_content(content_str, safe_filename)
     print_start_time = datetime.now()
+
+    audit_logger.info("FILE_UPLOAD email=%s filename=%s size=%d", user.get("email"), safe_filename, len(content))
 
     result = {
         "success": True,
@@ -616,13 +689,14 @@ async def upload_gcode(
 
     # Upload to printer if requested
     if upload_to_printer and printer_client and printer_client.state.connected:
-        if printer_client.upload_file(file.filename, content):
+        if printer_client.upload_file(safe_filename, content):
             result["uploaded_to_printer"] = True
 
             # Start printing if requested
             if start_print:
-                if printer_client.start_print(file.filename):
+                if printer_client.start_print(safe_filename):
                     result["print_started"] = True
+                    audit_logger.info("PRINT_START email=%s filename=%s", user.get("email"), safe_filename)
                 else:
                     result["message"] = "Uploaded but failed to start print"
         else:
@@ -714,8 +788,10 @@ async def get_config(user: dict = Depends(auth.get_current_user)):
 
 
 @app.get("/api/config/full")
-async def get_full_config(user: dict = Depends(auth.get_current_user)):
-    """Get full configuration for settings page."""
+async def get_full_config(request: Request, user: dict = Depends(auth.get_current_user)):
+    """Get full configuration for settings page (admin only)."""
+    if not auth.is_admin_user(request):
+        raise HTTPException(status_code=403, detail="Admin access required")
     return {
         "version": VERSION,
         "printer": config.get("printer", {}),
@@ -735,8 +811,11 @@ async def get_full_config(user: dict = Depends(auth.get_current_user)):
 
 
 @app.post("/api/config")
-async def update_config(update: ConfigUpdate, user: dict = Depends(auth.get_current_user)):
-    """Update configuration dynamically."""
+async def update_config(update: ConfigUpdate, request: Request, user: dict = Depends(auth.get_current_user)):
+    """Update configuration dynamically (admin only)."""
+    if not auth.is_admin_user(request):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
     global printer_client, config
 
     # Validate printer IP if provided
@@ -771,6 +850,7 @@ async def update_config(update: ConfigUpdate, user: dict = Depends(auth.get_curr
     with open(config_path, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
 
+    audit_logger.info("CONFIG_UPDATE email=%s changes=%s", user.get("email"), update.model_dump(exclude_none=True))
     return {"success": True, "message": "Configuration updated"}
 
 
@@ -782,8 +862,11 @@ class FullConfigUpdate(BaseModel):
 
 
 @app.post("/api/config/full")
-async def update_full_config(update: FullConfigUpdate, user: dict = Depends(auth.get_current_user)):
-    """Update full configuration from settings page."""
+async def update_full_config(update: FullConfigUpdate, request: Request, user: dict = Depends(auth.get_current_user)):
+    """Update full configuration from settings page (admin only)."""
+    if not auth.is_admin_user(request):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
     global printer_client, config
 
     # Update printer settings
@@ -807,7 +890,7 @@ async def update_full_config(update: FullConfigUpdate, user: dict = Depends(auth
                         printer_client.add_status_callback(status_change_callback)
                         printer_client.start_polling()
                 except Exception as e:
-                    print(f"Reconnection error: {e}")
+                    logger.warning("Reconnection error: %s", e)
             threading.Thread(target=reconnect, daemon=True).start()
 
     # Update material presets
@@ -835,6 +918,7 @@ async def update_full_config(update: FullConfigUpdate, user: dict = Depends(auth
     with open(config_path, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
 
+    audit_logger.info("CONFIG_UPDATE_FULL email=%s", user.get("email"))
     return {"success": True, "message": "Configuration updated and saved"}
 
 
@@ -901,12 +985,25 @@ async def scan_network(user: dict = Depends(auth.get_current_user)):
 @app.get("/api/camera")
 async def get_camera_url(user: dict = Depends(auth.get_current_user)):
     """Get the camera stream URL."""
+    return {
+        "stream_url": "/api/camera/stream",
+        "snapshot_url": "/api/camera/snapshot",
+    }
+
+
+@app.get("/api/camera/snapshot")
+async def camera_snapshot_proxy(user: dict = Depends(auth.get_current_user)):
+    """Proxy a single camera snapshot from the printer."""
     printer_ip = config["printer"]["ip_address"]
     camera_port = config["printer"].get("camera_port", 8080)
-    return {
-        "stream_url": f"/api/camera/stream",  # Use proxy path
-        "snapshot_url": f"http://{printer_ip}:{camera_port}/?action=snapshot",
-    }
+    snapshot_url = f"http://{printer_ip}:{camera_port}/?action=snapshot"
+    try:
+        r = requests.get(snapshot_url, timeout=5)
+        from fastapi.responses import Response
+        return Response(content=r.content, media_type=r.headers.get('content-type', 'image/jpeg'))
+    except Exception as e:
+        logger.warning("Camera snapshot failed: %s", e)
+        raise HTTPException(status_code=503, detail="Camera unavailable")
 
 
 @app.get("/api/camera/stream")
@@ -918,10 +1015,12 @@ def camera_stream_proxy(user: dict = Depends(auth.get_current_user)):
 
     def generate():
         """Stream camera data directly from printer."""
-        r = requests.get(camera_url, stream=True, timeout=(5, None))
-        # Stream chunks continuously - let the connection stay open
-        for chunk in r.iter_content(chunk_size=8192):
-            yield chunk
+        try:
+            r = requests.get(camera_url, stream=True, timeout=(5, 30))
+            for chunk in r.iter_content(chunk_size=8192):
+                yield chunk
+        except Exception as e:
+            logger.warning("Camera stream error: %s", e)
 
     return StreamingResponse(
         generate(),
