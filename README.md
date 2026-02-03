@@ -64,12 +64,44 @@ A modern, secure web dashboard for monitoring and controlling FlashForge Adventu
 - **Google Cloud Account** (for OAuth - free tier is sufficient)
 - **Printer IP Address** (find in printer's network settings)
 
-## 🚀 Installation
+## 🚀 Quick Start with Docker (Recommended)
+
+The easiest way to run FlashForgeDash is using Docker:
+
+```bash
+# 1. Download config file
+curl -o config.yaml https://raw.githubusercontent.com/rbridge1104/FlashForgeDash/main/config.yaml.example
+
+# 2. Edit config.yaml with your printer IP (use nano, vim, or notepad)
+
+# 3. Run the container
+docker run -d \
+  --name flashforge-dashboard \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v $(pwd)/data:/app/data \
+  -e GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com \
+  -e GOOGLE_CLIENT_SECRET=your-client-secret \
+  -e SESSION_SECRET_KEY=$(openssl rand -hex 32) \
+  -e ADMIN_EMAILS=your-email@gmail.com \
+  rbridge1104/flashforge-dash:latest
+
+# 4. Open browser to http://localhost:8000
+```
+
+**See [Docker Deployment](#-docker-deployment) section below for full details and Windows instructions.**
+
+---
+
+## 📦 Manual Installation (Alternative)
+
+If you prefer to run without Docker:
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/FlashForgeDash.git
+git clone https://github.com/rbridge1104/FlashForgeDash.git
 cd FlashForgeDash
 ```
 
@@ -188,25 +220,6 @@ gcode:
 ```
 
 ### 6. Start the Server
-
-**Option A: Using Docker (Recommended)**
-
-```bash
-# Copy environment file and configure
-cp .env.example .env
-# Edit .env with your OAuth credentials
-
-# Start with Docker Compose
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
-```
-
-**Option B: Running Directly**
 
 ```bash
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
@@ -603,115 +616,139 @@ FlashForgeDash/
 
 ## 🐳 Docker Deployment
 
-### Using Docker Desktop (Windows/Mac)
+### Quick Start (Recommended)
 
-**Quick Start:**
-
-1. **Install Docker Desktop**
-   - Download from [docker.com](https://www.docker.com/products/docker-desktop)
-   - Start Docker Desktop
-
-2. **Clone and Configure**
-   ```bash
-   git clone https://github.com/yourusername/FlashForgeDash.git
-   cd FlashForgeDash
-
-   # Copy and configure environment
-   cp .env.example .env
-   # Edit .env with your Google OAuth credentials
-
-   # Copy and configure printer settings
-   cp config.yaml.example config.yaml
-   # Edit config.yaml with your printer IP
-   ```
-
-3. **Start the Application**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access Dashboard**
-   - Open browser: `http://localhost:8000`
-   - Sign in with Google
-
-**Docker Desktop Management:**
+Run the pre-built Docker image from Docker Hub:
 
 ```bash
-# View logs
-docker-compose logs -f
+# Create config file
+curl -o config.yaml https://raw.githubusercontent.com/rbridge1104/FlashForgeDash/main/config.yaml.example
 
-# Restart container
-docker-compose restart
+# Edit config.yaml with your printer IP
 
-# Stop application
-docker-compose down
-
-# Rebuild after code changes
-docker-compose up -d --build
-
-# View running containers
-docker ps
-```
-
-**Troubleshooting Docker:**
-
-- **Can't connect to printer**: Make sure Docker can access your local network
-  - In Docker Desktop: Settings → Resources → Network
-  - Or use `network_mode: "host"` in docker-compose.yml (Linux only)
-
-- **Port 8000 already in use**: Stop other services or change port in docker-compose.yml
-
-- **Configuration not updating**: Restart container after config changes
-
-### Using Docker CLI
-
-```bash
-# Build image
-docker build -t flashforge-dash .
-
-# Run container
+# Run the container
 docker run -d \
   --name flashforge-dashboard \
+  --restart unless-stopped \
   -p 8000:8000 \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v $(pwd)/data:/app/data \
-  --env-file .env \
-  flashforge-dash
+  -e GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com \
+  -e GOOGLE_CLIENT_SECRET=your-client-secret \
+  -e SESSION_SECRET_KEY=$(openssl rand -hex 32) \
+  -e ADMIN_EMAILS=your-email@gmail.com \
+  rbridge1104/flashforge-dash:latest
+```
 
+**That's it!** Open browser: `http://localhost:8000`
+
+### Docker Commands
+
+```bash
 # View logs
 docker logs -f flashforge-dashboard
 
-# Stop container
+# Restart container
+docker restart flashforge-dashboard
+
+# Stop and remove container
 docker stop flashforge-dashboard
 docker rm flashforge-dashboard
+
+# Update to latest version
+docker pull rbridge1104/flashforge-dash:latest
+docker stop flashforge-dashboard
+docker rm flashforge-dashboard
+# Then run the docker run command again
+```
+
+### Windows PowerShell
+
+For Windows PowerShell, use this format:
+
+```powershell
+docker run -d `
+  --name flashforge-dashboard `
+  --restart unless-stopped `
+  -p 8000:8000 `
+  -v ${PWD}/config.yaml:/app/config.yaml:ro `
+  -v ${PWD}/data:/app/data `
+  -e GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com `
+  -e GOOGLE_CLIENT_SECRET=your-client-secret `
+  -e SESSION_SECRET_KEY=your-random-secret-key `
+  -e ADMIN_EMAILS=your-email@gmail.com `
+  rbridge1104/flashforge-dash:latest
+```
+
+### Configuration Options
+
+**Environment Variables (required):**
+- `GOOGLE_CLIENT_ID` - From Google Cloud Console
+- `GOOGLE_CLIENT_SECRET` - From Google Cloud Console
+- `SESSION_SECRET_KEY` - Random secret (run: `openssl rand -hex 32`)
+- `ADMIN_EMAILS` - Your email address(es), comma-separated
+
+**Optional Environment Variables:**
+- `PRINTER_IP=192.168.1.200` - Override printer IP from config.yaml
+- `PRINTER_POLL_INTERVAL=5` - Status polling interval in seconds
+- `N8N_WEBHOOK_URL=https://...` - Webhook URL for notifications
+
+### Using docker-compose (Alternative)
+
+If you prefer docker-compose:
+
+```bash
+# Download files
+curl -o docker-compose.yml https://raw.githubusercontent.com/rbridge1104/FlashForgeDash/main/docker-compose.yml
+curl -o .env.example https://raw.githubusercontent.com/rbridge1104/FlashForgeDash/main/.env.example
+curl -o config.yaml https://raw.githubusercontent.com/rbridge1104/FlashForgeDash/main/config.yaml.example
+
+# Configure
+cp .env.example .env
+# Edit .env and config.yaml with your settings
+
+# Start
+docker-compose up -d
+
+# Manage
+docker-compose logs -f    # View logs
+docker-compose restart    # Restart
+docker-compose down       # Stop
+```
+
+### Troubleshooting Docker
+
+**Can't connect to printer:**
+- Ensure Docker container can access your local network
+- Check printer IP is correct in config.yaml
+- Verify printer is on and connected to network
+
+**Port 8000 already in use:**
+```bash
+# Use a different port (e.g., 8001)
+docker run ... -p 8001:8000 ... rbridge1104/flashforge-dash:latest
+# Then access at http://localhost:8001
+```
+
+**OAuth errors:**
+- Verify Google OAuth redirect URI: `http://localhost:8000/auth/callback`
+- Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are correct
+- Ensure your email is in ADMIN_EMAILS
+
+**Configuration not updating:**
+```bash
+# Restart container to reload config.yaml
+docker restart flashforge-dashboard
 ```
 
 ### Docker Image Details
 
+- **Docker Hub**: https://hub.docker.com/r/rbridge1104/flashforge-dash
 - **Base Image**: Python 3.12-slim
-- **Size**: ~150MB (optimized multi-stage build)
-- **User**: Non-root user (flashforge:1000)
-- **Health Check**: Built-in health monitoring
-- **Restart Policy**: Automatic restart on failure
-
-### Volume Mounts
-
-- `./config.yaml` → `/app/config.yaml` - Printer configuration
-- `./data` → `/app/data` - User approvals and persistent data
-- `./.env` → Environment variables (or use docker-compose env)
-
-### Environment Variables
-
-All configuration can be done via environment variables instead of config files:
-
-```yaml
-GOOGLE_CLIENT_ID=your-id
-GOOGLE_CLIENT_SECRET=your-secret
-SESSION_SECRET_KEY=random-key
-ADMIN_EMAILS=admin@example.com
-PRINTER_IP=192.168.1.200
-N8N_WEBHOOK_URL=https://your-webhook
-```
+- **Size**: ~150MB compressed
+- **User**: Non-root (flashforge:1000)
+- **Health Check**: Automatic health monitoring
+- **Tags**: `latest`, `1.3.0`
 
 ## 🎯 Future Enhancements
 
