@@ -491,7 +491,7 @@
                 <div class="mb-6">
                     <div class="text-xs text-slate-500 uppercase tracking-wide mb-3">Printer Controls</div>
                     <div class="grid grid-cols-3 gap-3">
-                        <button class="flex flex-col items-center gap-2 px-4 py-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 rounded-lg border border-blue-500/30">
+                        <button id="home-btn" class="flex flex-col items-center gap-2 px-4 py-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 rounded-lg border border-blue-500/30">
                             <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                             </svg>
@@ -1074,7 +1074,7 @@
 
             // LED control
             // Home button
-            const homeBtn = document.querySelector('button .text-blue-400')?.closest('button');
+            const homeBtn = document.getElementById('home-btn');
             if (homeBtn) {
                 homeBtn.addEventListener('click', () => {
                     if (confirm('Home all axes? The print head will move to the home position.')) {
